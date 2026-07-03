@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/screens/auth_screen.dart';
 import '../../features/auth/presentation/screens/create_account_screen.dart';
 import '../../features/auth/presentation/screens/fitness_pass_screen.dart';
+import '../../features/auth/presentation/screens/mobile_login_screen.dart';
+import '../../features/auth/presentation/screens/otp_verification_screen.dart';
 import '../../features/gym_detail/presentation/screens/gym_detail_screen.dart';
 import '../../features/home/domain/gym_model.dart';
 import '../../features/location/presentation/screens/location_permission_screen.dart';
@@ -48,12 +50,28 @@ final GoRouter appRouter = GoRouter(
       pageBuilder: (context, state) => _slide(
         state: state,
         child: AuthScreen(
-          onMobileNumber: () => context.goNamed(RouteNames.createAccount),
+          onMobileNumber: () => context.goNamed(RouteNames.mobileLogin),
           onGoogle: () {},
           onApple: () {},
           onGuest: () => context.goNamed(RouteNames.locationPermission),
-          onContinue: () => context.goNamed(RouteNames.createAccount),
+          onContinue: () => context.goNamed(RouteNames.mobileLogin),
         ),
+      ),
+    ),
+    GoRoute(
+      path: RoutePaths.mobileLogin,
+      name: RouteNames.mobileLogin,
+      pageBuilder: (context, state) => _slide(
+        state: state,
+        child: const MobileLoginScreen(),
+      ),
+    ),
+    GoRoute(
+      path: RoutePaths.verifyOtp,
+      name: RouteNames.verifyOtp,
+      pageBuilder: (context, state) => _slide(
+        state: state,
+        child: const OtpVerificationScreen(),
       ),
     ),
     GoRoute(
@@ -70,18 +88,21 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: RoutePaths.fitnessPass,
       name: RouteNames.fitnessPass,
-      pageBuilder: (context, state) => _slide(
-        state: state,
-        child: FitnessPassScreen(
-          pass: FitnessPassData(
-            fullName: 'Aasif Khan',
-            gender: 'Male',
-            passId: 'GZ-2026-08741',
-            joinedAt: DateTime(2026, 6, 1),
+      pageBuilder: (context, state) {
+        final pass = state.extra as FitnessPassData? ?? FitnessPassData(
+          fullName: 'Aasif Khan',
+          gender: 'Male',
+          passId: 'GZ-2026-08741',
+          joinedAt: DateTime(2026, 6, 1),
+        );
+        return _slide(
+          state: state,
+          child: FitnessPassScreen(
+            pass: pass,
+            onContinue: () => context.goNamed(RouteNames.locationPermission),
           ),
-          onContinue: () => context.goNamed(RouteNames.locationPermission),
-        ),
-      ),
+        );
+      },
     ),
     GoRoute(
       path: RoutePaths.locationPermission,

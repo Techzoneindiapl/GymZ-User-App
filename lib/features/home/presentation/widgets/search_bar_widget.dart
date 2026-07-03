@@ -62,7 +62,7 @@ class SearchBarWidget extends StatelessWidget {
           child: InkWell(
             borderRadius: BorderRadius.circular(AppRadius.md),
             onTap: onFilterTap,
-            child: const Padding(
+            child:  Padding(
               padding: EdgeInsets.all(14),
               child: Icon(Icons.tune, color: AppColors.textOnPrimary, size: 20),
             ),

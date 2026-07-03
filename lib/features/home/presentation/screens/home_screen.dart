@@ -68,7 +68,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredGyms = ref.watch(filteredGymsProvider);
+    final filteredGymsAsync = ref.watch(filteredGymsProvider);
     final selectedCategory = ref.watch(selectedCategoryProvider);
 
     return SingleChildScrollView(
@@ -135,25 +135,49 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: _SectionHeader(title: 'Nearby Gyms', onSeeAll: widget.onSeeAllNearby),
           ),
           const SizedBox(height: AppSpacing.md),
-          if (filteredGyms.isEmpty)
-            Padding(
+          filteredGymsAsync.when(
+            data: (filteredGyms) {
+              if (filteredGyms.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
+                  child: Center(
+                    child: Text(
+                      'No gyms found matching your criteria.',
+                      style: TextStyle(color: AppColors.textMuted, fontSize: 16),
+                    ),
+                  ),
+                );
+              }
+              return Column(
+                children: [
+                  for (final gym in filteredGyms)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.lg),
+                      child: GymCard(
+                        gym: gym,
+                        onTap: () => widget.onGymTap?.call(gym),
+                      ),
+                    ),
+                ],
+              );
+            },
+            loading: () =>  Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+            ),
+            error: (err, stack) => Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
               child: Center(
                 child: Text(
-                  'No gyms found matching your criteria.',
-                  style: TextStyle(color: AppColors.textMuted, fontSize: 16),
+                  'Error loading gyms: ${err.toString().replaceAll('Exception: ', '')}',
+                  style:  TextStyle(color: AppColors.danger, fontSize: 16),
+                  textAlign: TextAlign.center,
                 ),
               ),
-            )
-          else
-            for (final gym in filteredGyms)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.lg),
-                child: GymCard(
-                  gym: gym,
-                  onTap: () => widget.onGymTap?.call(gym),
-                ),
-              ),
+            ),
+          ),
           const SizedBox(height: AppSpacing.sm),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),

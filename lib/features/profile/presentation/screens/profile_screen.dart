@@ -77,10 +77,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       CircleAvatar(
                         radius: 36,
                         backgroundColor: AppColors.iconCircleBg,
-                        backgroundImage: widget.avatarPath != null
-                            ? FileImage(File(widget.avatarPath!))
+                        backgroundImage: widget.avatarPath != null && widget.avatarPath!.isNotEmpty
+                            ? (widget.avatarPath!.startsWith('http')
+                                ? NetworkImage(widget.avatarPath!) as ImageProvider
+                                : FileImage(File(widget.avatarPath!)) as ImageProvider)
                             : null,
-                        child: widget.avatarPath == null
+                        child: widget.avatarPath == null || widget.avatarPath!.isEmpty
                             ? Icon(Icons.person, size: 36, color: AppColors.textSecondary)
                             : null,
                       ),
@@ -95,7 +97,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             shape: BoxShape.circle,
                           ),
                           alignment: Alignment.center,
-                          child: const Icon(Icons.camera_alt, size: 12, color: AppColors.primary),
+                          child:  Icon(Icons.camera_alt, size: 12, color: AppColors.primary),
                         ),
                       ),
                     ],
@@ -127,9 +129,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             // Stats row.
             Row(
               children: [
-                Expanded(child: _StatCard(value: '${widget.sessionCount}', label: 'SESSIONS')),
+                Expanded(child: _StatCard(value: '${widget.sessionCount}', label: 'SESSIONS', valueColor: AppColors.primary)),
                 const SizedBox(width: AppSpacing.md),
-                Expanded(child: _StatCard(value: '${widget.gymCount}', label: 'GYMS')),
+                Expanded(child: _StatCard(value: '${widget.gymCount}', label: 'GYMS', valueColor: AppColors.primary)),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(child: _StatCard(value: '${widget.memberSinceDays} Days', label: 'MEMBER SINCE', valueColor: AppColors.primary)),
               ],
@@ -211,7 +213,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 }
 
 class _StatCard extends StatelessWidget {
-  const _StatCard({required this.value, required this.label, this.valueColor = AppColors.primary});
+   _StatCard({required this.value, required this.label, required this.valueColor});
   final String value;
   final String label;
   final Color valueColor;

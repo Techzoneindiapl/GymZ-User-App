@@ -119,7 +119,7 @@ class _GymDetailScreenState extends State<GymDetailScreen> {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Row(children: [
-                                  const Icon(Icons.star, size: 16, color: AppColors.starColor),
+                                   Icon(Icons.star, size: 16, color: AppColors.starColor),
                                   const SizedBox(width: 2),
                                   Text(gym.rating.toString(), style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700)),
                                 ]),
@@ -166,7 +166,7 @@ class _GymDetailScreenState extends State<GymDetailScreen> {
                             padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                             child: Row(
                               children: [
-                                const Icon(Icons.circle, size: 8, color: AppColors.primary),
+                                 Icon(Icons.circle, size: 8, color: AppColors.primary),
                                 const SizedBox(width: AppSpacing.md),
                                 Expanded(child: Text(instruction, style: AppTextStyles.body)),
                               ],

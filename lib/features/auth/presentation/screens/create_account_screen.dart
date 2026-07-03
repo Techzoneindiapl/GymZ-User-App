@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:gymz_user/core/router/route_names.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -9,6 +11,8 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/gradient_scaffold.dart';
 import '../../../../core/widgets/primary_button.dart';
+import '../screens/fitness_pass_screen.dart';
+import '../../application/auth_provider.dart';
 
 enum Gender { male, female, other }
 
@@ -85,13 +89,38 @@ class CreateAccountNotifier extends Notifier<CreateAccountState> {
 final createAccountProvider =
     NotifierProvider<CreateAccountNotifier, CreateAccountState>(CreateAccountNotifier.new);
 
-class CreateAccountScreen extends ConsumerWidget {
+class CreateAccountScreen extends ConsumerStatefulWidget {
   const CreateAccountScreen({super.key, this.onBack, this.onSubmit});
 
   final VoidCallback? onBack;
   final VoidCallback? onSubmit;
 
-  Future<void> _pickSelfie(BuildContext context, WidgetRef ref) async {
+  @override
+  ConsumerState<CreateAccountScreen> createState() => _CreateAccountScreenState();
+}
+
+class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
+  late final TextEditingController _phoneController;
+
+  @override
+  void initState() {
+    super.initState();
+    final verifiedPhone = ref.read(authProvider).phone ?? '';
+    _phoneController = TextEditingController(text: verifiedPhone);
+    
+    // Set initial phone value in notifier state
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(createAccountProvider.notifier).updateMobileNumber(verifiedPhone);
+    });
+  }
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickSelfie(BuildContext context) async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.camera);
     if (picked != null) {
@@ -99,10 +128,44 @@ class CreateAccountScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _handleRegisterSubmit() async {
+    final formState = ref.read(createAccountProvider);
+    if (!formState.isValid) return;
+
+    // Use a realistic mock location formatted as: Lat/Long, Address
+    const mockLocation = "19.0760,72.8777, Mumbai, Maharashtra";
+
+    final user = await ref.read(authProvider.notifier).register(
+      name: formState.fullName,
+      gender: formState.gender == Gender.male 
+          ? 'Male' 
+          : (formState.gender == Gender.female ? 'Female' : 'Other'),
+      email: formState.email,
+      pincode: formState.pincode,
+      selfiePath: formState.selfieFilePath!,
+      location: mockLocation,
+    );
+
+    if (user != null && mounted) {
+      final pass = FitnessPassData(
+        fullName: user.name,
+        gender: user.gender,
+        passId: user.memberId,
+        joinedAt: DateTime.now(),
+        selfieFilePath: formState.selfieFilePath,
+      );
+      
+      // Navigate to the dynamic fitness pass screen
+      context.goNamed(RouteNames.fitnessPass, extra: pass);
+    }
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final state = ref.watch(createAccountProvider);
     final notifier = ref.read(createAccountProvider.notifier);
+    final authState = ref.watch(authProvider);
+    final isSubmitting = authState.status == AuthStatus.authenticating;
 
     return GradientScaffold(
       body: Column(
@@ -113,7 +176,7 @@ class CreateAccountScreen extends ConsumerWidget {
             child: Row(
               children: [
                 IconButton(
-                  onPressed: onBack,
+                  onPressed: widget.onBack,
                   icon: Icon(Icons.chevron_left, color: AppColors.textPrimary, size: 28),
                   style: IconButton.styleFrom(backgroundColor: AppColors.surfaceCard),
                 ),
@@ -129,7 +192,7 @@ class CreateAccountScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _FieldLabel('Full Name'),
-                  _InputField(hint: 'Aasif Khan', onChanged: notifier.updateFullName),
+                  _InputField(hint: 'Muzammil Qureshi', onChanged: notifier.updateFullName),
                   const SizedBox(height: AppSpacing.lg),
                   _FieldLabel('Gender'),
                   const SizedBox(height: AppSpacing.sm),
@@ -140,9 +203,11 @@ class CreateAccountScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.lg),
                   _FieldLabel('Mobile Number'),
                   _InputField(
-                    hint: '9876543210',
+                    hint: '7400105833',
                     keyboardType: TextInputType.phone,
                     onChanged: notifier.updateMobileNumber,
+                    controller: _phoneController,
+                    enabled: false,
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   _FieldLabel('Email Address'),
@@ -163,18 +228,23 @@ class CreateAccountScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.sm),
                   _SelfieUploader(
                     filePath: state.selfieFilePath,
-                    onPickCamera: () => _pickSelfie(context, ref),
+                    onPickCamera: () => _pickSelfie(context),
                   ),
-                  if (state.errorMessage != null) ...[
+                  
+                  // Display error if any
+                  if (state.errorMessage != null || authState.errorMessage != null) ...[
                     const SizedBox(height: AppSpacing.md),
-                    Text(state.errorMessage!, style: AppTextStyles.caption.copyWith(color: AppColors.danger)),
+                    Text(
+                      state.errorMessage ?? authState.errorMessage!,
+                      style: AppTextStyles.caption.copyWith(color: AppColors.danger),
+                    ),
                   ],
                   const SizedBox(height: AppSpacing.xxl),
                   PrimaryButton(
                     label: 'Generate My Fitness Pass',
-                    isEnabled: state.isValid,
-                    isLoading: state.isSubmitting,
-                    onPressed: onSubmit,
+                    isEnabled: state.isValid && !isSubmitting,
+                    isLoading: isSubmitting,
+                    onPressed: _handleRegisterSubmit,
                   ),
                   const SizedBox(height: AppSpacing.xl),
                 ],
@@ -201,23 +271,35 @@ class _FieldLabel extends StatelessWidget {
 }
 
 class _InputField extends StatelessWidget {
-  const _InputField({required this.hint, required this.onChanged, this.keyboardType});
+  const _InputField({
+    required this.hint,
+    required this.onChanged,
+    this.keyboardType,
+    this.controller,
+    this.enabled = true,
+  });
   final String hint;
   final ValueChanged<String> onChanged;
   final TextInputType? keyboardType;
+  final TextEditingController? controller;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     return TextField(
+      controller: controller,
+      enabled: enabled,
       onChanged: onChanged,
       keyboardType: keyboardType,
-      style: AppTextStyles.body,
+      style: AppTextStyles.body.copyWith(
+        color: enabled ? AppColors.textPrimary : AppColors.textMuted,
+      ),
       cursorColor: AppColors.primary,
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: AppTextStyles.body.copyWith(color: AppColors.textMuted),
         filled: true,
-        fillColor: AppColors.surfaceCard,
+        fillColor: enabled ? AppColors.surfaceCard : AppColors.surfaceCardSolid,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.pill),
           borderSide: BorderSide.none,
@@ -308,7 +390,7 @@ class _SelfieUploader extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.info_outline, size: 14, color: AppColors.primary),
+               Icon(Icons.info_outline, size: 14, color: AppColors.primary),
               const SizedBox(width: AppSpacing.xs),
               Text(
                 'Note: Keep background plain. Portrait Aligner.',

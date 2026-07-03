@@ -31,9 +31,17 @@ class GymCard extends StatelessWidget {
               height: 200,
               width: double.infinity,
               color: AppColors.surfaceCardSolid,
-              child:  Center(
-                child: Icon(Icons.fitness_center, size: 48, color: AppColors.textMuted),
-              ),
+              child: gym.imageUrl.isNotEmpty
+                  ? Image.network(
+                      gym.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Center(
+                        child: Icon(Icons.broken_image_outlined, size: 48, color: AppColors.textMuted),
+                      ),
+                    )
+                  : Center(
+                      child: Icon(Icons.fitness_center, size: 48, color: AppColors.textMuted),
+                    ),
             ),
             // Dark gradient overlay for text readability.
             Positioned.fill(
@@ -119,7 +127,7 @@ class GymCard extends StatelessWidget {
                         Text(gym.timingLabel, style: AppTextStyles.caption),
                         Row(
                           children: [
-                            const Icon(Icons.star, size: 14, color: AppColors.starColor),
+                             Icon(Icons.star, size: 14, color: AppColors.starColor),
                             const SizedBox(width: 2),
                             Text(gym.rating.toString(), style: AppTextStyles.caption),
                           ],

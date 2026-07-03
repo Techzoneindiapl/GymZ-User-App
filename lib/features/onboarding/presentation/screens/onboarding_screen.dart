@@ -8,6 +8,9 @@ import '../../../../core/widgets/gradient_scaffold.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../application/onboarding_notifier.dart';
 import '../../domain/onboarding_slide.dart';
+import '../../../auth/application/auth_provider.dart';
+import '../../../../core/router/route_names.dart';
+import 'package:go_router/go_router.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key, this.onSkip, this.onGetStarted});
@@ -50,6 +53,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AuthState>(authProvider, (previous, next) {
+      if (next.status == AuthStatus.authenticated && mounted) {
+        context.goNamed(RouteNames.home);
+      }
+    });
+
+    final authState = ref.read(authProvider);
+    if (authState.status == AuthStatus.authenticated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.goNamed(RouteNames.home);
+        }
+      });
+    }
+
     final state = ref.watch(onboardingProvider);
     final currentIndex = state.currentIndex;
     final isLast = currentIndex == kOnboardingSlides.length - 1;
@@ -217,7 +235,7 @@ class _BottomBar extends StatelessWidget {
                   child: InkWell(
                     customBorder: const CircleBorder(),
                     onTap: onNext,
-                    child: const Padding(
+                    child:  Padding(
                       padding: EdgeInsets.all(16),
                       child: Icon(Icons.arrow_forward, color: AppColors.textOnPrimary),
                     ),

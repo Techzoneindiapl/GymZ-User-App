@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/pass/presentation/screens/my_pass_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/auth/application/auth_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/theme_provider.dart';
@@ -98,12 +99,19 @@ class _UserShellScreenState extends ConsumerState<UserShellScreen> {
           ),
           const _PassesPlaceholder(),
           ProfileScreen(
-            name: 'Aasif Khan',
-            email: 'aasif@email.com',
-            memberId: 'GZ-2026-08741',
-            sessionCount: 42,
-            gymCount: 7,
-            memberSinceDays: 12,
+            name: ref.watch(authProvider).user?.name ?? 'Guest User',
+            email: ref.watch(authProvider).user?.email ?? 'guest@gymz.com',
+            memberId: ref.watch(authProvider).user?.memberId ?? 'GZ-GUEST',
+            avatarPath: ref.watch(authProvider).user?.selfieUrl,
+            sessionCount: ref.watch(authProvider).user != null ? 42 : 0,
+            gymCount: ref.watch(authProvider).user != null ? 7 : 0,
+            memberSinceDays: ref.watch(authProvider).user != null ? 12 : 0,
+            onLogout: () async {
+              await ref.read(authProvider.notifier).logout();
+              if (context.mounted) {
+                context.goNamed(RouteNames.auth);
+              }
+            },
           ),
         ],
       ),

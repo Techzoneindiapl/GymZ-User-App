@@ -43,7 +43,7 @@ class PrimaryButton extends StatelessWidget {
             height: 56,
             alignment: Alignment.center,
             child: isLoading
-                ? const SizedBox(
+                ?  SizedBox(
                     width: 22,
                     height: 22,
                     child: CircularProgressIndicator(
