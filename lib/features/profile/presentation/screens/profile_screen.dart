@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/theme_provider.dart';
+import '../../../../core/theme/text_size_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -168,6 +169,35 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
+            // Text size toggle.
+            Text('TEXT SIZE', style: AppTextStyles.label),
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceCard,
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _TextSizeToggleButton(
+                      label: 'Medium',
+                      isSelected: ref.watch(textSizeProvider) == TextSizeScale.medium,
+                      onTap: () => ref.read(textSizeProvider.notifier).state = TextSizeScale.medium,
+                    ),
+                  ),
+                  Expanded(
+                    child: _TextSizeToggleButton(
+                      label: 'Large',
+                      isSelected: ref.watch(textSizeProvider) == TextSizeScale.large,
+                      onTap: () => ref.read(textSizeProvider.notifier).state = TextSizeScale.large,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
             // Menu list.
             _MenuCard(
               items: [
@@ -265,6 +295,42 @@ class _ThemeToggleButton extends StatelessWidget {
             const SizedBox(width: AppSpacing.xs),
             Text(label, style: AppTextStyles.body.copyWith(fontSize: 13, color: isSelected ? AppColors.textPrimary : AppColors.textMuted)),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TextSizeToggleButton extends StatelessWidget {
+  const _TextSizeToggleButton({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm + 2),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.surfaceCardSolid : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: AppTextStyles.body.copyWith(
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? AppColors.textPrimary : AppColors.textMuted,
+          ),
         ),
       ),
     );
