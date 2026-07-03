@@ -99,7 +99,7 @@ class MyPassScreen extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.share_outlined, size: 18, color: AppColors.textPrimary),
+                            Icon(Icons.share_outlined, size: 18, color: AppColors.textPrimary),
                             const SizedBox(width: AppSpacing.sm),
                             Text('Share', style: AppTextStyles.buttonLabel),
                           ],
@@ -163,13 +163,13 @@ class _ActivePassCard extends StatelessWidget {
               RichText(
                 text: TextSpan(
                   style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w800),
-                  children: const [
+                  children:  [
                     TextSpan(text: 'GYM', style: TextStyle(color: AppColors.textPrimary)),
                     TextSpan(text: 'z', style: TextStyle(color: AppColors.primary)),
                   ],
                 ),
               ),
-              Container(
+              Container( 
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: _tierColor.withOpacity(0.2),

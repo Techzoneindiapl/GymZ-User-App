@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/pass/presentation/screens/my_pass_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../theme/theme_provider.dart';
+import '../router/route_names.dart';
 import 'gradient_scaffold.dart';
 
 final shellTabIndexProvider = StateProvider<int>((ref) => 0);
@@ -53,14 +56,25 @@ class _UserShellScreenState extends ConsumerState<UserShellScreen> {
   @override
   Widget build(BuildContext context) {
     final currentIndex = ref.watch(shellTabIndexProvider);
+    // Watch themeModeProvider so the bottom bar refreshes instantly on theme change
+    ref.watch(themeModeProvider);
 
     return GradientScaffold(
       bottomBar: _UserBottomNavBar(currentIndex: currentIndex, tabs: _tabs, onTap: _onTabTapped),
       body: PageView(
         controller: _pageController,
         onPageChanged: _onPageChanged,
+        physics: NeverScrollableScrollPhysics(),
         children: [
-          HomeScreen(onGymTap: (_) {}),
+          HomeScreen(
+            onGymTap: (gym) {
+              context.pushNamed(
+                RouteNames.gymDetail,
+                pathParameters: {'id': gym.id},
+                extra: gym,
+              );
+            },
+          ),
           const _ExplorePlaceholder(),
           MyPassScreen(
             pass: PassData(
@@ -109,8 +123,8 @@ class _UserBottomNavBar extends StatelessWidget {
     return Container(
       height: 72,
       padding: const EdgeInsets.symmetric(horizontal: 4),
-      decoration: const BoxDecoration(
-        color: Color(0xFF111666),
+      decoration:  BoxDecoration(
+        color: AppColors.bottomBarBg,
         border: Border(top: BorderSide(color: AppColors.divider)),
       ),
       child: SafeArea(

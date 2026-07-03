@@ -97,7 +97,7 @@ class _PassCard extends StatelessWidget {
               RichText(
                 text: TextSpan(
                   style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w800, fontSize: 16),
-                  children: const [
+                  children:  [
                     TextSpan(text: 'GYM', style: TextStyle(color: AppColors.textPrimary)),
                     TextSpan(text: 'z', style: TextStyle(color: AppColors.primary)),
                   ],
@@ -127,7 +127,7 @@ class _PassCard extends StatelessWidget {
                 clipBehavior: Clip.antiAlias,
                 child: pass.selfieFilePath != null
                     ? Image.file(File(pass.selfieFilePath!), fit: BoxFit.cover)
-                    : const Icon(Icons.person, size: 40, color: AppColors.textSecondary),
+                    : Icon(Icons.person, size: 40, color: AppColors.textSecondary),
               ),
               const SizedBox(width: AppSpacing.lg),
               Column(

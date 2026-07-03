@@ -36,7 +36,7 @@ class _GymDetailScreenState extends State<GymDetailScreen> {
             width: double.infinity,
             child: Container(
               color: AppColors.surfaceCardSolid,
-              child: const Center(
+              child:  Center(
                 child: Icon(Icons.fitness_center, size: 60, color: AppColors.textMuted),
               ),
             ),
@@ -48,7 +48,7 @@ class _GymDetailScreenState extends State<GymDetailScreen> {
             right: 0,
             height: 100,
             child: Container(
-              decoration: const BoxDecoration(
+              decoration:  BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -130,13 +130,13 @@ class _GymDetailScreenState extends State<GymDetailScreen> {
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         Row(children: [
-                          const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
+                          Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
                           const SizedBox(width: AppSpacing.xs),
                           Expanded(child: Text(gym.address, style: AppTextStyles.bodySmall)),
                         ]),
                         const SizedBox(height: AppSpacing.xs),
                         Row(children: [
-                          const Icon(Icons.access_time, size: 14, color: AppColors.textSecondary),
+                          Icon(Icons.access_time, size: 14, color: AppColors.textSecondary),
                           const SizedBox(width: AppSpacing.xs),
                           Text(gym.timingLabel, style: AppTextStyles.bodySmall),
                         ]),
@@ -222,7 +222,7 @@ class _GymDetailScreenState extends State<GymDetailScreen> {
             right: 0,
             child: Container(
               padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, AppSpacing.xl),
-              decoration: const BoxDecoration(
+              decoration:  BoxDecoration(
                 color: AppColors.backgroundBottom,
                 border: Border(top: BorderSide(color: AppColors.divider)),
               ),

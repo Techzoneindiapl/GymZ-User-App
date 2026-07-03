@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gymz_user/features/home/domain/gym_model.dart';
 import 'package:gymz_user/features/home/presentation/widgets/category_chip.dart';
 import 'package:gymz_user/features/home/presentation/widgets/gym_card.dart';
 import 'package:gymz_user/features/home/presentation/widgets/premium_tier_card.dart';
 import 'package:gymz_user/features/home/presentation/widgets/search_bar_widget.dart';
+import 'package:gymz_user/features/home/presentation/widgets/filter_bottom_sheet.dart';
+import 'package:gymz_user/features/home/application/gym_filter_provider.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
-
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({
     super.key,
     this.ownerFirstName = 'Aasif',
@@ -37,7 +39,38 @@ class HomeScreen extends StatelessWidget {
   final VoidCallback? onPassTap;
 
   @override
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController(text: ref.read(gymSearchQueryProvider));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _showFilterBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const FilterBottomSheet(),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final filteredGyms = ref.watch(filteredGymsProvider);
+    final selectedCategory = ref.watch(selectedCategoryProvider);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: AppSpacing.xxxl),
       child: Column(
@@ -47,16 +80,22 @@ class HomeScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
             child: _HomeHeader(
-              firstName: ownerFirstName,
-              avatarPath: avatarPath,
-              onNotificationTap: onNotificationTap,
-              onPassTap: onPassTap,
+              firstName: widget.ownerFirstName,
+              avatarPath: widget.avatarPath,
+              onNotificationTap: widget.onNotificationTap,
+              onPassTap: widget.onPassTap,
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-            child: SearchBarWidget(onTap: onSearchTap, onFilterTap: onFilterTap),
+            child: SearchBarWidget(
+              controller: _searchController,
+              onChanged: (val) {
+                ref.read(gymSearchQueryProvider.notifier).state = val;
+              },
+              onFilterTap: widget.onFilterTap ?? _showFilterBottomSheet,
+            ),
           ),
           const SizedBox(height: AppSpacing.xxl),
           Padding(
@@ -72,9 +111,20 @@ class HomeScreen extends StatelessWidget {
               itemCount: kCategories.length,
               separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
               itemBuilder: (context, index) {
+                final category = kCategories[index];
+                final isSelected = selectedCategory == category;
                 return CategoryChip(
-                  label: kCategories[index],
-                  onTap: () => onCategoryTap?.call(kCategories[index]),
+                  label: category,
+                  isSelected: isSelected,
+                  onTap: () {
+                    final notifier = ref.read(selectedCategoryProvider.notifier);
+                    if (isSelected) {
+                      notifier.state = null;
+                    } else {
+                      notifier.state = category;
+                    }
+                    widget.onCategoryTap?.call(category);
+                  },
                 );
               },
             ),
@@ -82,21 +132,32 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(height: AppSpacing.xxl),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-            child: _SectionHeader(title: 'Nearby Gyms', onSeeAll: onSeeAllNearby),
+            child: _SectionHeader(title: 'Nearby Gyms', onSeeAll: widget.onSeeAllNearby),
           ),
           const SizedBox(height: AppSpacing.md),
-          for (final gym in kSampleGyms)
+          if (filteredGyms.isEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.lg),
-              child: GymCard(
-                gym: gym,
-                onTap: () => onGymTap?.call(gym),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
+              child: Center(
+                child: Text(
+                  'No gyms found matching your criteria.',
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 16),
+                ),
               ),
-            ),
+            )
+          else
+            for (final gym in filteredGyms)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.lg),
+                child: GymCard(
+                  gym: gym,
+                  onTap: () => widget.onGymTap?.call(gym),
+                ),
+              ),
           const SizedBox(height: AppSpacing.sm),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-            child: _SectionHeader(title: 'Premium Tiers', onSeeAll: onSeeAllTiers),
+            child: _SectionHeader(title: 'Premium Tiers', onSeeAll: widget.onSeeAllTiers),
           ),
           const SizedBox(height: AppSpacing.md),
           Padding(
@@ -144,7 +205,7 @@ class _HomeHeader extends StatelessWidget {
           backgroundColor: AppColors.surfaceCard,
           backgroundImage: avatarPath != null ? AssetImage(avatarPath!) : null,
           child: avatarPath == null
-              ? const Icon(Icons.person, color: AppColors.textSecondary)
+              ? Icon(Icons.person, color: AppColors.textSecondary)
               : null,
         ),
         const SizedBox(width: AppSpacing.md),
@@ -159,13 +220,13 @@ class _HomeHeader extends StatelessWidget {
         ),
         IconButton(
           onPressed: onNotificationTap,
-          icon: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
+          icon: Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
           style: IconButton.styleFrom(backgroundColor: AppColors.surfaceCard),
         ),
         const SizedBox(width: AppSpacing.sm),
         IconButton(
           onPressed: onPassTap,
-          icon: const Icon(Icons.wallet_outlined, color: AppColors.textPrimary),
+          icon: Icon(Icons.wallet_outlined, color: AppColors.textPrimary),
           style: IconButton.styleFrom(backgroundColor: AppColors.surfaceCard),
         ),
       ],

@@ -56,18 +56,21 @@ class AuthScreen extends StatelessWidget {
                   label: 'Continue with Google',
                   onTap: onGoogle,
                   customLeading: _GoogleIcon(),
+                  iconColor: AppColors.textPrimary,
                 ),
                 const SizedBox(height: AppSpacing.md),
                 _AuthOption(
                   icon: Icons.apple,
                   label: 'Continue with Apple',
                   onTap: onApple,
+                  iconColor: AppColors.textPrimary,
                 ),
                 const SizedBox(height: AppSpacing.md),
                 _AuthOption(
                   icon: Icons.person_outline,
                   label: 'Continue as Guest',
                   onTap: onGuest,
+                  iconColor: AppColors.textPrimary,
                 ),
                 SizedBox(height: h * 0.08),
                 PrimaryButton(label: 'Continue', onPressed: onContinue),
@@ -91,7 +94,7 @@ class _GymzLogo extends StatelessWidget {
         RichText(
           text: TextSpan(
             style: AppTextStyles.displayLarge.copyWith(fontSize: 42, height: 1),
-            children: const [
+            children:  [
               TextSpan(text: 'GYM', style: TextStyle(color: AppColors.textPrimary)),
               TextSpan(text: 'Z', style: TextStyle(color: AppColors.primary)),
             ],
@@ -112,7 +115,7 @@ class _AuthOption extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.icon,
-    this.iconColor = AppColors.textPrimary,
+    required this.iconColor,
     this.customLeading,
   });
 

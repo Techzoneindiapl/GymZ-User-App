@@ -31,7 +31,7 @@ class GymCard extends StatelessWidget {
               height: 200,
               width: double.infinity,
               color: AppColors.surfaceCardSolid,
-              child: const Center(
+              child:  Center(
                 child: Icon(Icons.fitness_center, size: 48, color: AppColors.textMuted),
               ),
             ),
@@ -96,7 +96,7 @@ class GymCard extends StatelessWidget {
                             Text(gym.name, style: AppTextStyles.sectionTitle),
                             Row(
                               children: [
-                                const Icon(Icons.location_on, size: 12, color: AppColors.textSecondary),
+                                Icon(Icons.location_on, size: 12, color: AppColors.textSecondary),
                                 const SizedBox(width: 2),
                                 Text(gym.distanceLabel, style: AppTextStyles.caption),
                               ],

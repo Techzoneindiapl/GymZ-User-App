@@ -46,7 +46,7 @@ class GradientScaffold extends StatelessWidget {
                         AppColors.backgroundTop.withOpacity(0.75),
                         AppColors.backgroundBottom.withOpacity(0.9),
                       ]
-                    : const [AppColors.backgroundTop, AppColors.backgroundBottom],
+                    :  [AppColors.backgroundTop, AppColors.backgroundBottom],
               ),
             ),
             child: SafeArea(

@@ -8,29 +8,37 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Background gradient — same deep blue as partner app.
-  static const Color backgroundTop = Color(0xFF1A1FB8);
-  static const Color backgroundBottom = Color(0xFF0E126B);
+  /// Global flag to determine whether the app is in dark or light mode.
+  /// Managed dynamically by the theme notifier in main.dart.
+  static bool isDark = true;
+
+  // Background gradient — same deep blue as partner app in dark mode,
+  // premium cool grey/indigo in light mode.
+  static Color get backgroundTop => isDark ? const Color(0xFF1A1FB8) : const Color(0xFFEEF2F6);
+  static Color get backgroundBottom => isDark ? const Color(0xFF0E126B) : const Color(0xFFD8E2EF);
+
+  // Bottom Navigation Bar background.
+  static Color get bottomBarBg => isDark ? const Color(0xFF111666) : const Color(0xFFFFFFFF);
 
   // Card surfaces.
-  static const Color surfaceCard = Color(0x334A55E8);
-  static const Color surfaceCardSolid = Color(0xFF1E2580);
-  static const Color surfaceCardBorder = Color(0x33FFFFFF);
+  static Color get surfaceCard => isDark ? const Color(0x334A55E8) : const Color(0xFFFFFFFF);
+  static Color get surfaceCardSolid => isDark ? const Color(0xFF1E2580) : const Color(0xFFF1F5F9);
+  static Color get surfaceCardBorder => isDark ? const Color(0x33FFFFFF) : const Color(0x1F000000);
 
   // Primary accent — orange, used for CTAs, selected states, highlights.
   static const Color primary = Color(0xFFFF6B00);
   static const Color primaryLight = Color(0xFFFF8C38);
 
   // Text colors.
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xCCE3E6FF);
-  static const Color textMuted = Color(0x99C7CCFF);
+  static Color get textPrimary => isDark ? const Color(0xFFFFFFFF) : const Color(0xFF0F172A);
+  static Color get textSecondary => isDark ? const Color(0xCCE3E6FF) : const Color(0xFF334155);
+  static Color get textMuted => isDark ? const Color(0x99C7CCFF) : const Color(0xFF64748B);
   static const Color textOnPrimary = Color(0xFFFFFFFF);
-  static const Color textOnCard = Color(0xFFFFFFFF);
+  static Color get textOnCard => isDark ? const Color(0xFFFFFFFF) : const Color(0xFF0F172A);
 
   // Pill / chip.
-  static const Color pillBg = Color(0x4D5662F5);
-  static const Color pillBorder = Color(0x66FFFFFF);
+  static Color get pillBg => isDark ? const Color(0x4D5662F5) : const Color(0x1F4A55E8);
+  static Color get pillBorder => isDark ? const Color(0x66FFFFFF) : const Color(0x1F000000);
   static const Color pillSelectedBg = Color(0xFFFF6B00);
 
   // Status.
@@ -40,8 +48,8 @@ class AppColors {
   static const Color active = Color(0xFF4ADE80);
 
   // Misc.
-  static const Color divider = Color(0x1FFFFFFF);
-  static const Color iconCircleBg = Color(0x29FFFFFF);
+  static Color get divider => isDark ? const Color(0x1FFFFFFF) : const Color(0x1F000000);
+  static Color get iconCircleBg => isDark ? const Color(0x29FFFFFF) : const Color(0x14000000);
   static const Color starColor = Color(0xFFFFB020);
 
   // Tier colors.

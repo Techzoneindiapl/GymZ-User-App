@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:gymz_user/core/theme/app_colors.dart';
-import 'package:gymz_user/core/theme/app_spacing.dart';
-import 'package:gymz_user/core/theme/app_text_styles.dart';
-
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_text_styles.dart';
 
 class CategoryChip extends StatelessWidget {
-  const CategoryChip({super.key, required this.label, required this.onTap});
+  const CategoryChip({
+    super.key,
+    required this.label,
+    required this.onTap,
+    this.isSelected = false,
+  });
+
   final String label;
   final VoidCallback onTap;
+  final bool isSelected;
 
   IconData get _icon {
     switch (label) {
@@ -30,15 +36,21 @@ class CategoryChip extends StatelessWidget {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: AppColors.surfaceCard,
+              color: isSelected ? AppColors.primary : AppColors.surfaceCard,
               borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(color: AppColors.surfaceCardBorder),
+              border: Border.all(color: isSelected ? AppColors.primary : AppColors.surfaceCardBorder),
             ),
             alignment: Alignment.center,
-            child: Icon(_icon, color: AppColors.primary, size: 26),
+            child: Icon(_icon, color: isSelected ? AppColors.textOnPrimary : AppColors.primary, size: 26),
           ),
           const SizedBox(height: AppSpacing.xs),
-          Text(label, style: AppTextStyles.caption.copyWith(color: AppColors.textPrimary)),
+          Text(
+            label,
+            style: AppTextStyles.caption.copyWith(
+              color: isSelected ? AppColors.primary : AppColors.textPrimary,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );

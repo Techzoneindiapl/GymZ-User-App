@@ -114,7 +114,7 @@ class CreateAccountScreen extends ConsumerWidget {
               children: [
                 IconButton(
                   onPressed: onBack,
-                  icon: const Icon(Icons.chevron_left, color: AppColors.textPrimary, size: 28),
+                  icon: Icon(Icons.chevron_left, color: AppColors.textPrimary, size: 28),
                   style: IconButton.styleFrom(backgroundColor: AppColors.surfaceCard),
                 ),
                 const SizedBox(width: AppSpacing.md),
@@ -292,11 +292,11 @@ class _SelfieUploader extends StatelessWidget {
           Container(
             width: 100,
             height: 100,
-            decoration: const BoxDecoration(color: AppColors.iconCircleBg, shape: BoxShape.circle),
+            decoration: BoxDecoration(color: AppColors.iconCircleBg, shape: BoxShape.circle),
             clipBehavior: Clip.antiAlias,
             child: filePath != null
                 ? Image.file(File(filePath!), fit: BoxFit.cover)
-                : const Icon(Icons.camera_alt_outlined, size: 36, color: AppColors.textSecondary),
+                : Icon(Icons.camera_alt_outlined, size: 36, color: AppColors.textSecondary),
           ),
           const SizedBox(height: AppSpacing.lg),
           PrimaryButton(

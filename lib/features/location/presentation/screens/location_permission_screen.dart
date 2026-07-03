@@ -32,7 +32,7 @@ class LocationPermissionScreen extends StatelessWidget {
               child: Container(
                 width: 120,
                 height: 120,
-                decoration: const BoxDecoration(
+                decoration:  BoxDecoration(
                   color: AppColors.iconCircleBg,
                   shape: BoxShape.circle,
                 ),

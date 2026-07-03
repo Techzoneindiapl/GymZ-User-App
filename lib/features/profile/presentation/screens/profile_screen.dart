@@ -1,13 +1,15 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/theme_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/gradient_scaffold.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({
     super.key,
     required this.name,
@@ -42,14 +44,15 @@ class ProfileScreen extends StatefulWidget {
   final VoidCallback? onLogout;
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  bool _isDarkMode = true;
-
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
+    final themeMode = ref.watch(themeModeProvider);
+    final isDarkMode = themeMode == ThemeMode.dark;
+
     return GradientScaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -78,7 +81,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ? FileImage(File(widget.avatarPath!))
                             : null,
                         child: widget.avatarPath == null
-                            ? const Icon(Icons.person, size: 36, color: AppColors.textSecondary)
+                            ? Icon(Icons.person, size: 36, color: AppColors.textSecondary)
                             : null,
                       ),
                       Positioned(
@@ -87,7 +90,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Container(
                           width: 22,
                           height: 22,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: AppColors.surfaceCardSolid,
                             shape: BoxShape.circle,
                           ),
@@ -147,16 +150,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: _ThemeToggleButton(
                       icon: Icons.dark_mode_outlined,
                       label: 'Dark Mode',
-                      isSelected: _isDarkMode,
-                      onTap: () => setState(() => _isDarkMode = true),
+                      isSelected: isDarkMode,
+                      onTap: () => ref.read(themeModeProvider.notifier).state = ThemeMode.dark,
                     ),
                   ),
                   Expanded(
                     child: _ThemeToggleButton(
                       icon: Icons.light_mode_outlined,
                       label: 'Light Mode',
-                      isSelected: !_isDarkMode,
-                      onTap: () => setState(() => _isDarkMode = false),
+                      isSelected: !isDarkMode,
+                      onTap: () => ref.read(themeModeProvider.notifier).state = ThemeMode.light,
                     ),
                   ),
                 ],
@@ -310,7 +313,7 @@ class _MenuItem extends StatelessWidget {
               Container(
                 width: 38,
                 height: 38,
-                decoration: const BoxDecoration(color: AppColors.iconCircleBg, shape: BoxShape.circle),
+                decoration: BoxDecoration(color: AppColors.iconCircleBg, shape: BoxShape.circle),
                 alignment: Alignment.center,
                 child: Icon(icon, size: 18, color: AppColors.primary),
               ),
@@ -325,7 +328,7 @@ class _MenuItem extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 20),
+              Icon(Icons.chevron_right, color: AppColors.textMuted, size: 20),
             ],
           ),
         ),
