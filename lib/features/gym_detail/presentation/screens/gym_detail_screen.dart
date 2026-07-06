@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -35,6 +36,23 @@ class _GymDetailScreenState extends ConsumerState<GymDetailScreen> {
       orElse: () => widget.gym,
     );
 
+    // Build the combined list of media items.
+    final List<Map<String, String>> mediaItems = [];
+    if (gym.introVideo != null && gym.introVideo!.isNotEmpty) {
+      mediaItems.add({'type': 'video', 'url': gym.introVideo!});
+    }
+    for (final img in gym.galleryPhotos) {
+      mediaItems.add({'type': 'image', 'url': img});
+    }
+    if (mediaItems.isEmpty && gym.imageUrl.isNotEmpty) {
+      mediaItems.add({'type': 'image', 'url': gym.imageUrl});
+    }
+
+    final List<String> imagesOnly = mediaItems
+        .where((item) => item['type'] == 'image')
+        .map((item) => item['url']!)
+        .toList();
+
     return Scaffold(
       backgroundColor: AppColors.backgroundBottom,
       extendBodyBehindAppBar: true,
@@ -50,30 +68,51 @@ class _GymDetailScreenState extends ConsumerState<GymDetailScreen> {
             left: 0,
             right: 0,
             height: 350,
-            child: gym.galleryPhotos.isNotEmpty
+            child: mediaItems.isNotEmpty
                 ? Stack(
                     children: [
                       PageView.builder(
-                        itemCount: gym.galleryPhotos.length,
+                        itemCount: mediaItems.length,
                         onPageChanged: (index) {
                           setState(() {
                             _currentImageIndex = index;
                           });
                         },
                         itemBuilder: (context, index) {
-                          return Image.network(
-                            gym.galleryPhotos[index],
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              color: AppColors.surfaceCardSolid,
-                              child: Center(
-                                child: Icon(Icons.fitness_center, size: 60, color: AppColors.textMuted),
+                          final item = mediaItems[index];
+                          if (item['type'] == 'video') {
+                            return _VideoPlayerSlide(url: item['url']!);
+                          } else {
+                            return GestureDetector(
+                              onTap: () {
+                                final imageIndex = imagesOnly.indexOf(item['url']!);
+                                if (imageIndex != -1) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => FullScreenImageViewer(
+                                        images: imagesOnly,
+                                        initialIndex: imageIndex,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                              child: Image.network(
+                                item['url']!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Container(
+                                  color: AppColors.surfaceCardSolid,
+                                  child: Center(
+                                    child: Icon(Icons.fitness_center, size: 60, color: AppColors.textMuted),
+                                  ),
+                                ),
                               ),
-                            ),
-                          );
+                            );
+                          }
                         },
                       ),
-                      if (gym.galleryPhotos.length > 1)
+                      if (mediaItems.length > 1)
                         Positioned(
                           bottom: 50,
                           left: 0,
@@ -81,7 +120,7 @@ class _GymDetailScreenState extends ConsumerState<GymDetailScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: List.generate(
-                              gym.galleryPhotos.length,
+                              mediaItems.length,
                               (index) => Container(
                                 width: 8,
                                 height: 8,
@@ -98,23 +137,12 @@ class _GymDetailScreenState extends ConsumerState<GymDetailScreen> {
                         ),
                     ],
                   )
-                : (gym.imageUrl.isNotEmpty
-                    ? Image.network(
-                        gym.imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: AppColors.surfaceCardSolid,
-                          child: Center(
-                            child: Icon(Icons.fitness_center, size: 60, color: AppColors.textMuted),
-                          ),
-                        ),
-                      )
-                    : Container(
-                        color: AppColors.surfaceCardSolid,
-                        child: Center(
-                          child: Icon(Icons.fitness_center, size: 60, color: AppColors.textMuted),
-                        ),
-                      )),
+                : Container(
+                    color: AppColors.surfaceCardSolid,
+                    child: Center(
+                      child: Icon(Icons.fitness_center, size: 60, color: AppColors.textMuted),
+                    ),
+                  ),
           ),
           // Gradient from image into card.
           Positioned(
@@ -493,6 +521,242 @@ class _FacilityChip extends StatelessWidget {
             color: AppColors.textPrimary,
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _VideoPlayerSlide extends StatefulWidget {
+  const _VideoPlayerSlide({required this.url});
+  final String url;
+
+  @override
+  State<_VideoPlayerSlide> createState() => _VideoPlayerSlideState();
+}
+
+class _VideoPlayerSlideState extends State<_VideoPlayerSlide> {
+  late VideoPlayerController _controller;
+  bool _isInitialized = false;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url))
+      ..initialize().then((_) {
+        if (!mounted) return;
+        setState(() {
+          _isInitialized = true;
+        });
+        _controller.setLooping(true);
+        _controller.setVolume(0.0); // Muted by default
+        _controller.play();
+      }).catchError((_) {
+        if (!mounted) return;
+        setState(() {
+          _hasError = true;
+        });
+      });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_hasError) {
+      return Container(
+        color: AppColors.surfaceCardSolid,
+        child: const Center(
+          child: Icon(Icons.error_outline, size: 40, color: Colors.white60),
+        ),
+      );
+    }
+
+    if (!_isInitialized) {
+      return Container(
+        color: Colors.black,
+        child: const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        ),
+      );
+    }
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        SizedBox.expand(
+          child: FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: _controller.value.size.width,
+              height: _controller.value.size.height,
+              child: VideoPlayer(_controller),
+            ),
+          ),
+        ),
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              if (_controller.value.isPlaying) {
+                _controller.pause();
+              } else {
+                _controller.play();
+              }
+            });
+          },
+          child: Container(
+            color: Colors.transparent,
+            child: Center(
+              child: AnimatedOpacity(
+                opacity: _controller.value.isPlaying ? 0.0 : 1.0,
+                duration: const Duration(milliseconds: 200),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow,
+                    size: 40,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 60,
+          right: 16,
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                if (_controller.value.volume == 0.0) {
+                  _controller.setVolume(1.0);
+                } else {
+                  _controller.setVolume(0.0);
+                }
+              });
+            },
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _controller.value.volume == 0.0 ? Icons.volume_off : Icons.volume_up,
+                size: 20,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class FullScreenImageViewer extends StatefulWidget {
+  const FullScreenImageViewer({
+    super.key,
+    required this.images,
+    required this.initialIndex,
+  });
+
+  final List<String> images;
+  final int initialIndex;
+
+  @override
+  State<FullScreenImageViewer> createState() => _FullScreenImageViewerState();
+}
+
+class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
+  late final PageController _pageController;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          PageView.builder(
+            controller: _pageController,
+            itemCount: widget.images.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            itemBuilder: (context, index) {
+              return Center(
+                child: InteractiveViewer(
+                  maxScale: 4.0,
+                  child: Image.network(
+                    widget.images[index],
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) => const Center(
+                      child: Icon(Icons.broken_image, size: 80, color: Colors.white54),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    Text(
+                      '${_currentIndex + 1} / ${widget.images.length}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 48),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
