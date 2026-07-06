@@ -1,19 +1,57 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/gradient_scaffold.dart';
 import '../../../../core/widgets/primary_button.dart';
+import '../../application/location_provider.dart';
 
-class LocationPermissionScreen extends StatelessWidget {
+class LocationPermissionScreen extends ConsumerWidget {
   const LocationPermissionScreen({super.key, this.onAllowAccess, this.onNotNow});
 
   final VoidCallback? onAllowAccess;
   final VoidCallback? onNotNow;
 
+  Future<void> _handleAllowAccess(BuildContext context, WidgetRef ref) async {
+    final success = await ref.read(userLocationProvider.notifier).requestPermission();
+    if (context.mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(
+            content: Text('Location access granted successfully!'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else {
+        // Falling back to user mock coordinates
+        ref.read(userLocationProvider.notifier).setMockLocation();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Permission denied or service disabled. Using fallback location.'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.warning,
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.black,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+      onAllowAccess?.call();
+    }
+  }
+
+  void _handleNotNow(BuildContext context, WidgetRef ref) {
+    ref.read(userLocationProvider.notifier).setMockLocation();
+    onNotNow?.call();
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GradientScaffold(
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
@@ -32,7 +70,7 @@ class LocationPermissionScreen extends StatelessWidget {
               child: Container(
                 width: 120,
                 height: 120,
-                decoration:  BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.iconCircleBg,
                   shape: BoxShape.circle,
                 ),
@@ -53,18 +91,21 @@ class LocationPermissionScreen extends StatelessWidget {
               style: AppTextStyles.bodySmall.copyWith(fontSize: 15),
             ),
             const SizedBox(height: AppSpacing.xxl),
-            _LocationOptionPill(label: 'Precise Location · Best for nearby search'),
+            const _LocationOptionPill(label: 'Precise Location · Best for nearby search'),
             const SizedBox(height: AppSpacing.md),
-            _LocationOptionPill(label: 'Approximate Location · Limited results'),
+            const _LocationOptionPill(label: 'Approximate Location · Limited results'),
             const Spacer(flex: 3),
-            PrimaryButton(label: 'Allow Access', onPressed: onAllowAccess),
+            PrimaryButton(
+              label: 'Allow Access',
+              onPressed: () => _handleAllowAccess(context, ref),
+            ),
             const SizedBox(height: AppSpacing.md),
             Material(
               color: AppColors.surfaceCardSolid,
               borderRadius: BorderRadius.circular(AppRadius.pill),
               child: InkWell(
                 borderRadius: BorderRadius.circular(AppRadius.pill),
-                onTap: onNotNow,
+                onTap: () => _handleNotNow(context, ref),
                 child: Container(
                   width: double.infinity,
                   height: 56,

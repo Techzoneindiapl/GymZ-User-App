@@ -14,6 +14,8 @@ class GymModel {
     this.usageInstructions = const [],
     this.address = '',
     this.description = '',
+    required this.latitude,
+    required this.longitude,
   });
 
   final String id;
@@ -30,9 +32,34 @@ class GymModel {
   final List<String> usageInstructions;
   final String address;
   final String description;
+  final double latitude;
+  final double longitude;
 
   String get distanceLabel => '${distanceKm.toStringAsFixed(1)} km';
   String get timingLabel => '$openingTime – $closingTime';
+
+  GymModel copyWith({
+    double? distanceKm,
+  }) {
+    return GymModel(
+      id: id,
+      name: name,
+      category: category,
+      tier: tier,
+      distanceKm: distanceKm ?? this.distanceKm,
+      openingTime: openingTime,
+      closingTime: closingTime,
+      pricePerSession: pricePerSession,
+      rating: rating,
+      imageUrl: imageUrl,
+      facilities: facilities,
+      usageInstructions: usageInstructions,
+      address: address,
+      description: description,
+      latitude: latitude,
+      longitude: longitude,
+    );
+  }
 
   factory GymModel.fromJson(Map<String, dynamic> json) {
     final id = json['_id'] ?? '';
@@ -71,25 +98,9 @@ class GymModel {
     final loc = json['location'] as Map<String, dynamic>?;
     final address = loc?['address'] ?? '';
     
-    // Calculate a simulated realistic distance if coordinates are dummy
-    // User mock: 19.0760, 72.8777
-    final lat = loc?['latitude'] as double? ?? 19.0760;
-    final lon = loc?['longitude'] as double? ?? 72.8777;
-    double distance = 1.2;
-    if (lat == 19.0760 && lon == 72.8777) {
-      distance = 0.5 + (id.hashCode % 15) / 10;
-    } else {
-      final dLat = (lat - 19.0760) * 111.0;
-      final dLon = (lon - 72.8777) * 111.0 * 0.94;
-      final dist = dLat * dLat + dLon * dLon;
-      if (dist > 2500) {
-        distance = 0.5 + (id.hashCode % 20) / 10;
-      } else {
-        distance = double.parse(dist.toStringAsFixed(1));
-        if (distance < 0.1) distance = 0.3;
-      }
-    }
-    
+    final lat = (loc?['latitude'] as num?)?.toDouble() ?? 19.0760;
+    final lon = (loc?['longitude'] as num?)?.toDouble() ?? 72.8777;
+
     // Generate a deterministic rating based on ID
     final rating = 4.0 + (id.hashCode % 10) / 10.0;
 
@@ -98,7 +109,7 @@ class GymModel {
       name: name,
       category: category,
       tier: tier,
-      distanceKm: distance,
+      distanceKm: 1.2, // Default distance placeholder (overwritten dynamically)
       openingTime: openingTime,
       closingTime: closingTime,
       pricePerSession: price,
@@ -112,6 +123,8 @@ class GymModel {
       ],
       address: address,
       description: 'Premium training facility equipped with modern amenities and certified trainers. Access all features with your GYMZ pass.',
+      latitude: lat,
+      longitude: lon,
     );
   }
 }
@@ -132,6 +145,8 @@ const List<GymModel> kSampleGyms = [
     description: 'Premium strength-focused gym with Olympic platforms, sleds and a recovery zone.',
     facilities: ['Cardio', 'Weight Training', 'Steam', 'Shower', 'Boxing', 'Martial Arts'],
     usageInstructions: ['Gym shoes required', 'Carry your own water bottle', 'No outside food'],
+    latitude: 19.0782,
+    longitude: 72.8801,
   ),
   GymModel(
     id: 'g2',
@@ -148,6 +163,8 @@ const List<GymModel> kSampleGyms = [
     description: 'Holistic yoga center offering Hatha, Vinyasa and meditation sessions.',
     facilities: ['Yoga Mats', 'Steam', 'Meditation Room', 'Locker'],
     usageInstructions: ['Bring your own mat', 'Arrive 5 min early', 'Silence phones'],
+    latitude: 19.0805,
+    longitude: 72.8752,
   ),
 ];
 
