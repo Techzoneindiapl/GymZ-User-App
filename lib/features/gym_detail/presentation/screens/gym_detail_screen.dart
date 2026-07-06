@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../home/domain/gym_model.dart';
+import '../../application/gym_detail_provider.dart';
 
-class GymDetailScreen extends StatefulWidget {
+class GymDetailScreen extends ConsumerStatefulWidget {
   const GymDetailScreen({super.key, required this.gym, this.onBack, this.onBookNow, this.onShare});
 
   final GymModel gym;
@@ -15,40 +17,113 @@ class GymDetailScreen extends StatefulWidget {
   final VoidCallback? onShare;
 
   @override
-  State<GymDetailScreen> createState() => _GymDetailScreenState();
+  ConsumerState<GymDetailScreen> createState() => _GymDetailScreenState();
 }
 
-class _GymDetailScreenState extends State<GymDetailScreen> {
+class _GymDetailScreenState extends ConsumerState<GymDetailScreen> {
   bool _termsExpanded = false;
+  int _currentImageIndex = 0;
 
   @override
   Widget build(BuildContext context) {
-    final gym = widget.gym;
+    // Watch detailed gym data provider.
+    final gymDetailsAsync = ref.watch(gymDetailsProvider(widget.gym.id));
+
+    // Use fully loaded gym details if available, fallback to basic widget.gym in background.
+    final gym = gymDetailsAsync.maybeWhen(
+      data: (details) => details,
+      orElse: () => widget.gym,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.backgroundBottom,
       extendBodyBehindAppBar: true,
+      // IMPORTANT: extendBody is false (default). This means Scaffold
+      // automatically insets `body` above `bottomNavigationBar`, so the
+      // scroll area can never be covered by the price/Book Now bar again,
+      // regardless of how tall that bar renders on a given device.
       body: Stack(
         children: [
-          // Hero image.
-          SizedBox(
-            height: 300,
-            width: double.infinity,
-            child: Container(
-              color: AppColors.surfaceCardSolid,
-              child:  Center(
-                child: Icon(Icons.fitness_center, size: 60, color: AppColors.textMuted),
-              ),
-            ),
+          // Hero image / gallery carousel.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 350,
+            child: gym.galleryPhotos.isNotEmpty
+                ? Stack(
+                    children: [
+                      PageView.builder(
+                        itemCount: gym.galleryPhotos.length,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentImageIndex = index;
+                          });
+                        },
+                        itemBuilder: (context, index) {
+                          return Image.network(
+                            gym.galleryPhotos[index],
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              color: AppColors.surfaceCardSolid,
+                              child: Center(
+                                child: Icon(Icons.fitness_center, size: 60, color: AppColors.textMuted),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      if (gym.galleryPhotos.length > 1)
+                        Positioned(
+                          bottom: 50,
+                          left: 0,
+                          right: 0,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(
+                              gym.galleryPhotos.length,
+                              (index) => Container(
+                                width: 8,
+                                height: 8,
+                                margin: const EdgeInsets.symmetric(horizontal: 4),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: _currentImageIndex == index
+                                      ? AppColors.primary
+                                      : AppColors.textMuted.withOpacity(0.5),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  )
+                : (gym.imageUrl.isNotEmpty
+                    ? Image.network(
+                        gym.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: AppColors.surfaceCardSolid,
+                          child: Center(
+                            child: Icon(Icons.fitness_center, size: 60, color: AppColors.textMuted),
+                          ),
+                        ),
+                      )
+                    : Container(
+                        color: AppColors.surfaceCardSolid,
+                        child: Center(
+                          child: Icon(Icons.fitness_center, size: 60, color: AppColors.textMuted),
+                        ),
+                      )),
           ),
           // Gradient from image into card.
           Positioned(
-            top: 220,
+            top: 270,
             left: 0,
             right: 0,
             height: 100,
             child: Container(
-              decoration:  BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -68,7 +143,7 @@ class _GymDetailScreenState extends State<GymDetailScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _CircleIconButton(icon: Icons.arrow_back, onTap: widget.onBack),
+                    _CircleIconButton(icon: Icons.chevron_left, onTap: widget.onBack),
                     _CircleIconButton(icon: Icons.share_outlined, onTap: widget.onShare),
                   ],
                 ),
@@ -76,8 +151,14 @@ class _GymDetailScreenState extends State<GymDetailScreen> {
             ),
           ),
           // Scrollable content.
-          Positioned.fill(
-            top: 260,
+          // NOTE: bottom is now 0 — Scaffold already reserves the space
+          // taken by bottomNavigationBar, so this no longer needs to guess
+          // the bar's height, and content is never hidden behind it.
+          Positioned(
+            top: 310,
+            left: 0,
+            right: 0,
+            bottom: 0,
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,53 +176,92 @@ class _GymDetailScreenState extends State<GymDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: AppColors.surfaceCardSolid,
+                                color: AppColors.primary.withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(AppRadius.pill),
-                                border: Border.all(color: AppColors.surfaceCardBorder),
                               ),
-                              child: Text('${gym.tier} · ${gym.category}', style: AppTextStyles.caption),
+                              child: Text(
+                                '${gym.tier} · ${gym.category}',
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.star, size: 20, color: AppColors.starColor),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      gym.rating.toStringAsFixed(1),
+                                      style: AppTextStyles.displayMedium.copyWith(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${gym.distanceLabel} away',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(gym.name, style: AppTextStyles.displayMedium.copyWith(fontSize: 26, fontWeight: FontWeight.w800)),
+                        const SizedBox(height: AppSpacing.md),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.location_on_outlined, size: 16, color: AppColors.textSecondary),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Text(
+                                gym.address,
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.textSecondary,
+                                  height: 1.3,
+                                ),
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Text(gym.name, style: AppTextStyles.displayMedium),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Row(children: [
-                                   Icon(Icons.star, size: 16, color: AppColors.starColor),
-                                  const SizedBox(width: 2),
-                                  Text(gym.rating.toString(), style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700)),
-                                ]),
-                                Text('${gym.distanceLabel} away', style: AppTextStyles.bodySmall),
-                              ],
+                            Icon(Icons.access_time, size: 16, color: AppColors.textSecondary),
+                            const SizedBox(width: AppSpacing.sm),
+                            Text(
+                              gym.timingLabel,
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Row(children: [
-                          Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondary),
-                          const SizedBox(width: AppSpacing.xs),
-                          Expanded(child: Text(gym.address, style: AppTextStyles.bodySmall)),
-                        ]),
-                        const SizedBox(height: AppSpacing.xs),
-                        Row(children: [
-                          Icon(Icons.access_time, size: 14, color: AppColors.textSecondary),
-                          const SizedBox(width: AppSpacing.xs),
-                          Text(gym.timingLabel, style: AppTextStyles.bodySmall),
-                        ]),
-                        const SizedBox(height: AppSpacing.md),
-                        Text(gym.description, style: AppTextStyles.bodySmall.copyWith(fontSize: 14)),
+                        const SizedBox(height: AppSpacing.lg),
+                        Text(
+                          gym.description,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                            height: 1.4,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -153,22 +273,44 @@ class _GymDetailScreenState extends State<GymDetailScreen> {
                       children: [
                         Text('Facilities', style: AppTextStyles.sectionTitle),
                         const SizedBox(height: AppSpacing.lg),
-                        Wrap(
-                          spacing: AppSpacing.sm,
-                          runSpacing: AppSpacing.sm,
-                          children: gym.facilities.map((f) => _FacilityChip(label: f)).toList(),
+                        GridView.builder(
+                          shrinkWrap: true,
+                          padding: EdgeInsets.zero,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: AppSpacing.sm,
+                            mainAxisSpacing: AppSpacing.sm,
+                            childAspectRatio: 1.7,
+                          ),
+                          itemCount: gym.facilities.length,
+                          itemBuilder: (context, index) {
+                            return _FacilityChip(label: gym.facilities[index]);
+                          },
                         ),
                         const SizedBox(height: AppSpacing.xxl),
                         Text('Usage Instructions', style: AppTextStyles.sectionTitle),
                         const SizedBox(height: AppSpacing.lg),
                         for (final instruction in gym.usageInstructions)
                           Padding(
-                            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                            padding: const EdgeInsets.only(bottom: AppSpacing.md),
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                 Icon(Icons.circle, size: 8, color: AppColors.primary),
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: Icon(Icons.circle, size: 6, color: AppColors.primary),
+                                ),
                                 const SizedBox(width: AppSpacing.md),
-                                Expanded(child: Text(instruction, style: AppTextStyles.body)),
+                                Expanded(
+                                  child: Text(
+                                    instruction,
+                                    style: AppTextStyles.body.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -177,37 +319,56 @@ class _GymDetailScreenState extends State<GymDetailScreen> {
                         Material(
                           color: AppColors.surfaceCard,
                           borderRadius: BorderRadius.circular(AppRadius.xl),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(AppRadius.xl),
-                            onTap: () => setState(() => _termsExpanded = !_termsExpanded),
-                            child: Padding(
-                              padding: const EdgeInsets.all(AppSpacing.lg),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text('Terms & Conditions', style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600)),
-                                      Icon(
-                                        _termsExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                                        color: AppColors.textSecondary,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(AppRadius.xl),
+                              border: Border.all(color: AppColors.surfaceCardBorder),
+                            ),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(AppRadius.xl),
+                              onTap: () => setState(() => _termsExpanded = !_termsExpanded),
+                              child: Padding(
+                                padding: const EdgeInsets.all(AppSpacing.lg),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text('Terms & Conditions', style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600)),
+                                        Icon(
+                                          _termsExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ],
+                                    ),
+                                    if (_termsExpanded) ...[
+                                      const SizedBox(height: AppSpacing.md),
+                                      Text(
+                                        'Pass is valid for the booked date only and non-transferable.',
+                                        style: AppTextStyles.bodySmall.copyWith(height: 1.4, color: AppColors.textSecondary),
+                                      ),
+                                      const SizedBox(height: AppSpacing.md),
+                                      Text(
+                                        'Late entry by more than 15 minutes will forfeit the session.',
+                                        style: AppTextStyles.bodySmall.copyWith(height: 1.4, color: AppColors.textSecondary),
+                                      ),
+                                      const SizedBox(height: AppSpacing.md),
+                                      Text(
+                                        'Refund / reschedule available up to 2 hours before the session.',
+                                        style: AppTextStyles.bodySmall.copyWith(height: 1.4, color: AppColors.textSecondary),
                                       ),
                                     ],
-                                  ),
-                                  if (_termsExpanded) ...[
-                                    const SizedBox(height: AppSpacing.md),
-                                    Text(
-                                      'Standard membership terms apply. No refunds on single sessions. Management reserves the right to refuse entry.',
-                                      style: AppTextStyles.bodySmall,
-                                    ),
                                   ],
-                                ],
+                                ),
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 100),
+                        // A little breathing room is still nice, but we no
+                        // longer need a large magic-number gap to dodge the
+                        // bottom bar — Scaffold handles that now.
+                        const SizedBox(height: AppSpacing.xl),
                       ],
                     ),
                   ),
@@ -215,34 +376,70 @@ class _GymDetailScreenState extends State<GymDetailScreen> {
               ),
             ),
           ),
-          // Fixed bottom bar: price + Book Now.
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, AppSpacing.xl),
-              decoration:  BoxDecoration(
-                color: AppColors.backgroundBottom,
-                border: Border(top: BorderSide(color: AppColors.divider)),
-              ),
-              child: Row(
+        ],
+      ),
+      // Fixed bottom bar: price + Book Now.
+      // Moved out of the Stack and into bottomNavigationBar so Scaffold
+      // reserves exactly the space this bar needs (whatever its real
+      // rendered height is) and insets `body` above it automatically.
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: AppColors.backgroundBottom,
+            border: Border(top: BorderSide(color: AppColors.divider)),
+          ),
+          child: Builder(
+            builder: (context) {
+              final gymDetailsAsync = ref.watch(gymDetailsProvider(widget.gym.id));
+              final gym = gymDetailsAsync.maybeWhen(
+                data: (details) => details,
+                orElse: () => widget.gym,
+              );
+              return Row(
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('From', style: AppTextStyles.caption),
-                      Text('\u20B9${gym.pricePerSession} / session', style: AppTextStyles.price),
+                      Text(
+                        gym.activeSlotLabel.isNotEmpty ? gym.activeSlotLabel : 'From',
+                        style: AppTextStyles.caption.copyWith(
+                          color: gym.activeSlotLabel.isNotEmpty ? AppColors.primary : AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            '\u20B9${gym.currentPrice}',
+                            style: AppTextStyles.price.copyWith(
+                              color: AppColors.primary,
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          Text(
+                            ' / session',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                   const SizedBox(width: AppSpacing.lg),
                   Expanded(child: PrimaryButton(label: 'Book Now', onPressed: widget.onBookNow)),
                 ],
-              ),
-            ),
+              );
+            },
           ),
-        ],
+        ),
       ),
     );
   }
@@ -277,13 +474,26 @@ class _FacilityChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.surfaceCardBorder),
       ),
-      child: Text(label, style: AppTextStyles.body),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.body.copyWith(
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ),
     );
   }
 }

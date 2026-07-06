@@ -46,6 +46,26 @@ class GymRepository {
       rethrow;
     }
   }
+
+  /// Fetch detailed information of a specific gym by ID.
+  /// GET api/v1/user/gyms/{gymId}
+  Future<GymModel> fetchGymDetails(String gymId) async {
+    try {
+      final response = await _apiClient.get('api/v1/user/gyms/$gymId');
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data;
+        if (data is Map<String, dynamic> && data['success'] == true) {
+          final gymData = data['data'];
+          if (gymData is Map<String, dynamic>) {
+            return GymModel.fromJson(gymData);
+          }
+        }
+      }
+      throw Exception('Failed to load gym details');
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
 
 final gymRepositoryProvider = Provider<GymRepository>((ref) {

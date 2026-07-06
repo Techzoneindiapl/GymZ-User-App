@@ -1,3 +1,43 @@
+class PriceSlot {
+  const PriceSlot({
+    required this.price,
+    required this.slot,
+  });
+
+  final int price;
+  final String slot;
+
+  factory PriceSlot.fromJson(Map<String, dynamic> json) {
+    return PriceSlot(
+      price: (json['price'] as num?)?.toInt() ?? 0,
+      slot: json['slot'] as String? ?? '',
+    );
+  }
+}
+
+class SessionPricing {
+  const SessionPricing({
+    required this.morningHour,
+    required this.primeHour,
+    required this.routineHour,
+    required this.averagePrice,
+  });
+
+  final PriceSlot morningHour;
+  final PriceSlot primeHour;
+  final PriceSlot routineHour;
+  final int averagePrice;
+
+  factory SessionPricing.fromJson(Map<String, dynamic> json) {
+    return SessionPricing(
+      morningHour: PriceSlot.fromJson(json['morningHour'] as Map<String, dynamic>? ?? {}),
+      primeHour: PriceSlot.fromJson(json['primeHour'] as Map<String, dynamic>? ?? {}),
+      routineHour: PriceSlot.fromJson(json['routineHour'] as Map<String, dynamic>? ?? {}),
+      averagePrice: (json['averagePrice'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
 class GymModel {
   const GymModel({
     required this.id,
@@ -16,6 +56,9 @@ class GymModel {
     this.description = '',
     required this.latitude,
     required this.longitude,
+    this.galleryPhotos = const [],
+    this.introVideo,
+    this.sessionPricing,
   });
 
   final String id;
@@ -34,12 +77,18 @@ class GymModel {
   final String description;
   final double latitude;
   final double longitude;
+  final List<String> galleryPhotos;
+  final String? introVideo;
+  final SessionPricing? sessionPricing;
 
   String get distanceLabel => '${distanceKm.toStringAsFixed(1)} km';
   String get timingLabel => '$openingTime – $closingTime';
 
   GymModel copyWith({
     double? distanceKm,
+    List<String>? galleryPhotos,
+    String? introVideo,
+    SessionPricing? sessionPricing,
   }) {
     return GymModel(
       id: id,
@@ -58,15 +107,102 @@ class GymModel {
       description: description,
       latitude: latitude,
       longitude: longitude,
+      galleryPhotos: galleryPhotos ?? this.galleryPhotos,
+      introVideo: introVideo ?? this.introVideo,
+      sessionPricing: sessionPricing ?? this.sessionPricing,
     );
+  }
+
+  int get currentPrice {
+    final pricing = sessionPricing;
+    if (pricing == null) return pricePerSession;
+    
+    final now = DateTime.now();
+    
+    if (_isInSlot(pricing.morningHour.slot, now)) {
+      return pricing.morningHour.price;
+    }
+    if (_isInSlot(pricing.primeHour.slot, now)) {
+      return pricing.primeHour.price;
+    }
+    if (_isInSlot(pricing.routineHour.slot, now)) {
+      return pricing.routineHour.price;
+    }
+    
+    return pricing.averagePrice > 0 ? pricing.averagePrice : pricePerSession;
+  }
+
+  String get activeSlotLabel {
+    final pricing = sessionPricing;
+    if (pricing == null) return '';
+    
+    final now = DateTime.now();
+    
+    if (_isInSlot(pricing.morningHour.slot, now)) {
+      return 'Morning Hour (${pricing.morningHour.slot})';
+    }
+    if (_isInSlot(pricing.primeHour.slot, now)) {
+      return 'Prime Hour (${pricing.primeHour.slot})';
+    }
+    if (_isInSlot(pricing.routineHour.slot, now)) {
+      return 'Routine Hour (${pricing.routineHour.slot})';
+    }
+    
+    return '';
+  }
+
+  int _parseToMinutes(String timeStr) {
+    timeStr = timeStr.trim().toUpperCase();
+    timeStr = timeStr.replaceAll(' ', '');
+    final isPm = timeStr.contains('PM');
+    final isAm = timeStr.contains('AM');
+    
+    final timePart = timeStr.replaceAll(RegExp(r'[A-Z]'), '');
+    final parts = timePart.split(':');
+    int hour = int.tryParse(parts[0]) ?? 0;
+    int minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+    
+    if (isPm && hour != 12) {
+      hour += 12;
+    } else if (isAm && hour == 12) {
+      hour = 0;
+    }
+    return hour * 60 + minute;
+  }
+
+  bool _isInSlot(String slotStr, DateTime time) {
+    if (slotStr.isEmpty) return false;
+    final parts = slotStr.split(RegExp(r'\s+to\s+|\s*-\s*|\s*–\s*'));
+    if (parts.length < 2) return false;
+
+    final startMin = _parseToMinutes(parts[0]);
+    final endMin = _parseToMinutes(parts[1]);
+
+    final currentMin = time.hour * 60 + time.minute;
+
+    if (startMin <= endMin) {
+      return currentMin >= startMin && currentMin < endMin;
+    } else {
+      return currentMin >= startMin || currentMin < endMin;
+    }
   }
 
   factory GymModel.fromJson(Map<String, dynamic> json) {
     final id = json['_id'] ?? '';
     final name = json['gymName'] ?? '';
-    final facilities = List<String>.from(json['facilities'] ?? []);
     
-    // Determine category based on facilities or name
+    final rawFacilities = json['facilities'] ?? [];
+    List<String> facilities = [];
+    if (rawFacilities is List) {
+      for (final f in rawFacilities) {
+        if (f is String) {
+          facilities.add(f);
+        } else if (f is Map && f['name'] != null) {
+          facilities.add(f['name'].toString());
+        }
+      }
+    }
+    
     String category = 'Gym';
     final lowerName = name.toLowerCase();
     if (facilities.any((f) => f.toLowerCase().contains('yoga')) || lowerName.contains('yoga')) {
@@ -77,54 +213,78 @@ class GymModel {
       category = 'Sports';
     }
     
-    final price = json['averagePrice'] as int? ?? 0;
+    final price = (json['averagePrice'] as num?)?.toInt() ?? 0;
     
-    // Determine tier based on price
-    String tier = 'Silver';
-    if (price >= 400) {
-      tier = 'Platinum';
-    } else if (price >= 300) {
-      tier = 'Diamond';
-    } else if (price >= 200) {
-      tier = 'Gold';
+    String tier = json['tier'] ?? 'Silver';
+    if (tier == 'Silver') {
+      if (price >= 400) {
+        tier = 'Platinum';
+      } else if (price >= 300) {
+        tier = 'Diamond';
+      } else if (price >= 200) {
+        tier = 'Gold';
+      }
     }
     
-    // Determine working hours
     final workingHours = json['workingHours'] as Map<String, dynamic>?;
     final openingTime = workingHours?['open'] ?? '5 AM';
     final closingTime = workingHours?['close'] ?? '11 PM';
     
-    // Get location coordinates and address
     final loc = json['location'] as Map<String, dynamic>?;
-    final address = loc?['address'] ?? '';
+    final address = loc?['address'] ?? json['address'] ?? '';
     
     final lat = (loc?['latitude'] as num?)?.toDouble() ?? 19.0760;
     final lon = (loc?['longitude'] as num?)?.toDouble() ?? 72.8777;
 
-    // Generate a deterministic rating based on ID
-    final rating = 4.0 + (id.hashCode % 10) / 10.0;
+    final rating = (json['rating'] as num?)?.toDouble() ?? (4.0 + (id.hashCode % 10) / 10.0);
+
+    final media = json['media'] as Map<String, dynamic>?;
+    final rawGallery = media?['galleryPhotos'] as List?;
+    final galleryPhotos = rawGallery != null ? List<String>.from(rawGallery) : <String>[];
+    final introVideo = media?['introVideo'] as String?;
+
+    String imageUrl = json['firstImage'] ?? '';
+    if (imageUrl.isEmpty && galleryPhotos.isNotEmpty) {
+      imageUrl = galleryPhotos.first;
+    }
+
+    final rawInstructions = json['usageInstructions'];
+    List<String> usageInstructions = [];
+    if (rawInstructions is List) {
+      usageInstructions = List<String>.from(rawInstructions);
+    } else {
+      usageInstructions = const [
+        'Gym shoes required',
+        'Carry your own water bottle',
+        'Show digital check-in pass at the reception',
+      ];
+    }
+
+    final description = json['description'] ?? 'Premium training facility equipped with modern amenities and certified trainers. Access all features with your GYMZ pass.';
+
+    final rawPricing = json['sessionPricing'];
+    final sessionPricing = rawPricing != null ? SessionPricing.fromJson(rawPricing as Map<String, dynamic>) : null;
 
     return GymModel(
       id: id,
       name: name,
       category: category,
       tier: tier,
-      distanceKm: 1.2, // Default distance placeholder (overwritten dynamically)
+      distanceKm: 1.2,
       openingTime: openingTime,
       closingTime: closingTime,
       pricePerSession: price,
       rating: rating,
-      imageUrl: json['firstImage'] ?? '',
+      imageUrl: imageUrl,
       facilities: facilities,
-      usageInstructions: const [
-        'Gym shoes required',
-        'Carry your own water bottle',
-        'Show digital check-in pass at the reception',
-      ],
+      usageInstructions: usageInstructions,
       address: address,
-      description: 'Premium training facility equipped with modern amenities and certified trainers. Access all features with your GYMZ pass.',
+      description: description,
       latitude: lat,
       longitude: lon,
+      galleryPhotos: galleryPhotos,
+      introVideo: introVideo,
+      sessionPricing: sessionPricing,
     );
   }
 }
