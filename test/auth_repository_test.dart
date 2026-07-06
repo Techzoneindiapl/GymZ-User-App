@@ -1,16 +1,25 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gymz_user/core/network/api_client.dart';
 import 'package:gymz_user/core/storage/storage_service.dart';
+import 'package:gymz_user/core/services/notification_service.dart';
 import 'package:gymz_user/features/auth/data/repositories/auth_repository.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late Dio dio;
   late ApiClient apiClient;
   late AuthRepository authRepository;
 
   setUp(() {
+    const channel = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+      return null;
+    });
+
     final storageService = StorageService();
     apiClient = ApiClient(storageService);
     dio = apiClient.dio;
@@ -162,5 +171,60 @@ void main() {
         await tempFile.delete();
       }
     });
+
+    test('sendOtp triggers local notification when response contains otp', () async {
+      final mockNotificationService = MockNotificationService();
+      final testRepository = AuthRepository(apiClient, mockNotificationService);
+
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            if (options.path == 'api/v1/user/send-otp') {
+              return handler.resolve(
+                Response(
+                  requestOptions: options,
+                  statusCode: 200,
+                  data: {
+                    'success': true,
+                    'message': 'OTP sent successfully',
+                    'otp': '4321'
+                  },
+                ),
+              );
+            }
+            return handler.next(options);
+          },
+        ),
+      );
+
+      final result = await testRepository.sendOtp('7400105833');
+      expect(result, isTrue);
+      expect(mockNotificationService.lastShownTitle, equals('GymZ Verification Code'));
+      expect(mockNotificationService.lastShownBody, contains('4321'));
+    });
   });
+}
+
+class MockNotificationService extends NotificationService {
+  String? lastShownTitle;
+  String? lastShownBody;
+  int? lastShownId;
+
+  @override
+  Future<void> init() async {}
+
+  @override
+  Future<bool> requestPermissions() async => true;
+
+  @override
+  Future<void> showNotification({
+    required int id,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    lastShownId = id;
+    lastShownTitle = title;
+    lastShownBody = body;
+  }
 }

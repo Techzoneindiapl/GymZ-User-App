@@ -1,15 +1,23 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gymz_user/core/network/api_client.dart';
 import 'package:gymz_user/core/storage/storage_service.dart';
 import 'package:gymz_user/features/home/data/repositories/gym_repository.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late Dio dio;
   late ApiClient apiClient;
   late GymRepository gymRepository;
 
   setUp(() {
+    const channel = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+      return null;
+    });
+
     final storageService = StorageService();
     apiClient = ApiClient(storageService);
     dio = apiClient.dio;

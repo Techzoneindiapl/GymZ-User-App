@@ -8,8 +8,22 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
 import 'core/theme/text_size_provider.dart';
 
-void main() {
-  runApp(const ProviderScope(child: GymzUserApp()));
+import 'core/services/notification_service.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final container = ProviderContainer();
+  final notificationService = container.read(notificationServiceProvider);
+  await notificationService.init();
+  await notificationService.requestPermissions();
+
+  runApp(
+    UncontrolledProviderScope(
+      container: container,
+      child: const GymzUserApp(),
+    ),
+  );
 }
 
 class GymzUserApp extends ConsumerWidget {

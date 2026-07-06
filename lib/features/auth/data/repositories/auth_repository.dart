@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../domain/user_model.dart';
 
 class VerifyOtpResponse {
@@ -17,9 +18,10 @@ class VerifyOtpResponse {
 }
 
 class AuthRepository {
-  const AuthRepository(this._apiClient);
+  const AuthRepository(this._apiClient, [this._notificationService]);
 
   final ApiClient _apiClient;
+  final NotificationService? _notificationService;
 
   /// Send OTP to the user's phone number.
   /// POST api/v1/user/send-otp
@@ -29,8 +31,24 @@ class AuthRepository {
         'api/v1/user/send-otp',
         data: {'phone': phone},
       );
-      // Returns true if the request was successful
-      return response.statusCode == 200 || response.statusCode == 201;
+      
+      final isSuccess = response.statusCode == 200 || response.statusCode == 201;
+      
+      if (isSuccess && response.data != null) {
+        final data = response.data;
+        if (data is Map<String, dynamic>) {
+          final otp = data['otp'] ?? data['code'] ?? data['data']?['otp'] ?? data['data']?['code'];
+          if (otp != null) {
+            await _notificationService?.showNotification(
+              id: 1,
+              title: 'GymZ Verification Code',
+              body: 'Your OTP is: $otp. Use this code to login.',
+            );
+          }
+        }
+      }
+      
+      return isSuccess;
     } catch (e) {
       rethrow;
     }
@@ -135,5 +153,6 @@ class AuthRepository {
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
-  return AuthRepository(apiClient);
+  final notificationService = ref.watch(notificationServiceProvider);
+  return AuthRepository(apiClient, notificationService);
 });
