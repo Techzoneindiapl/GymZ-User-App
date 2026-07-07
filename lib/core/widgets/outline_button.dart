@@ -43,7 +43,7 @@ class OutlineButton extends StatelessWidget {
                 Icon(leadingIcon, size: 18, color: AppColors.textPrimary),
                 const SizedBox(width: AppSpacing.sm),
               ],
-              Text(label, style: AppTextStyles.buttonLabel),
+              Text(label, style: AppTextStyles.buttonLabel.copyWith(color: AppColors.primary)),
               if (trailingIcon != null) ...[
                 const SizedBox(width: AppSpacing.sm),
                 Icon(trailingIcon, size: 18, color: AppColors.textPrimary),

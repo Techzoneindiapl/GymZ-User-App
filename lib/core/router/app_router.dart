@@ -131,7 +131,7 @@ final GoRouter appRouter = GoRouter(
             gym: gym,
             onBack: () => context.pop(),
             onShare: () {},
-            onBookNow: () {},
+            onBookNow: null,
           ),
         );
       },

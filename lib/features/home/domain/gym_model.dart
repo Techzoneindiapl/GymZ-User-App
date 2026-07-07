@@ -151,6 +151,45 @@ class GymModel {
     return '';
   }
 
+  int getPriceForTime({required int hour, required int minute}) {
+    final pricing = sessionPricing;
+    if (pricing == null) return pricePerSession;
+    
+    final dummyTime = DateTime(2026, 1, 1, hour, minute);
+    
+    if (_isInSlot(pricing.morningHour.slot, dummyTime)) {
+      return pricing.morningHour.price;
+    }
+    if (_isInSlot(pricing.primeHour.slot, dummyTime)) {
+      return pricing.primeHour.price;
+    }
+    if (_isInSlot(pricing.routineHour.slot, dummyTime)) {
+      return pricing.routineHour.price;
+    }
+    
+    return pricing.averagePrice > 0 ? pricing.averagePrice : pricePerSession;
+  }
+
+  String getSlotLabelForTime({required int hour, required int minute}) {
+    final pricing = sessionPricing;
+    if (pricing == null) return '';
+    
+    final dummyTime = DateTime(2026, 1, 1, hour, minute);
+    
+    if (_isInSlot(pricing.morningHour.slot, dummyTime)) {
+      return 'Morning Hour (${pricing.morningHour.slot})';
+    }
+    if (_isInSlot(pricing.primeHour.slot, dummyTime)) {
+      return 'Prime Hour (${pricing.primeHour.slot})';
+    }
+    if (_isInSlot(pricing.routineHour.slot, dummyTime)) {
+      return 'Routine Hour (${pricing.routineHour.slot})';
+    }
+    
+    return '';
+  }
+
+
   int _parseToMinutes(String timeStr) {
     timeStr = timeStr.trim().toUpperCase();
     timeStr = timeStr.replaceAll(' ', '');

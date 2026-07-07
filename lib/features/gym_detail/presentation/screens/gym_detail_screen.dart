@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
@@ -8,6 +9,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../home/domain/gym_model.dart';
 import '../../application/gym_detail_provider.dart';
+import '../widgets/booking_widgets.dart';
 
 class GymDetailScreen extends ConsumerStatefulWidget {
   const GymDetailScreen({super.key, required this.gym, this.onBack, this.onBookNow, this.onShare});
@@ -24,6 +26,57 @@ class GymDetailScreen extends ConsumerStatefulWidget {
 class _GymDetailScreenState extends ConsumerState<GymDetailScreen> {
   bool _termsExpanded = false;
   int _currentImageIndex = 0;
+
+  Future<void> _startBookingFlow(GymModel gym, [DateTime? initialDate, TimeOfDay? initialTime]) async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => BookingBottomSheet(
+        gym: gym,
+        initialDate: initialDate,
+        initialTime: initialTime,
+      ),
+    );
+
+    if (result == null) return;
+
+    final DateTime date = result['date'] as DateTime;
+    final TimeOfDay time = result['time'] as TimeOfDay;
+
+    if (!mounted) return;
+
+    final confirmResult = await showDialog<BookingDialogResult>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => BookingConfirmationDialog(
+        gym: gym,
+        date: date,
+        time: time,
+      ),
+    );
+
+    if (confirmResult == BookingDialogResult.edit) {
+      _startBookingFlow(gym, date, time);
+      return;
+    }
+
+    if (confirmResult == BookingDialogResult.confirm && mounted) {
+      final rand = Random();
+      final bookingId = 'GZ-BK-${10000 + rand.nextInt(90000)}';
+
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => BookingSuccessDialog(
+          gym: gym,
+          date: date,
+          time: time,
+          bookingId: bookingId,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -462,7 +515,12 @@ class _GymDetailScreenState extends ConsumerState<GymDetailScreen> {
                     ],
                   ),
                   const SizedBox(width: AppSpacing.lg),
-                  Expanded(child: PrimaryButton(label: 'Book Now', onPressed: widget.onBookNow)),
+                  Expanded(
+                    child: PrimaryButton(
+                      label: 'Book Now',
+                      onPressed: widget.onBookNow ?? () => _startBookingFlow(gym),
+                    ),
+                  ),
                 ],
               );
             },
