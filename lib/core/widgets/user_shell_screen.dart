@@ -8,6 +8,7 @@ import '../../features/explore/presentation/screens/explore_screen.dart';
 import '../../features/pass/presentation/screens/my_pass_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/wallet/presentation/screens/wallet_screen.dart';
+import '../../features/auth/presentation/screens/fitness_pass_screen.dart';
 import '../../features/auth/application/auth_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -128,6 +129,35 @@ class _UserShellScreenState extends ConsumerState<UserShellScreen> {
             sessionCount: ref.watch(authProvider).user?.sessionsCount ?? 0,
             gymCount: ref.watch(authProvider).user?.gymsCount ?? 0,
             memberSinceDays: ref.watch(authProvider).user?.memberSinceDays ?? 0,
+            onCardTap: () {
+              final user = ref.read(authProvider).user;
+              context.pushNamed(
+                RouteNames.fitnessPass,
+                queryParameters: {'fromProfile': 'true'},
+                extra: FitnessPassData(
+                  fullName: user?.name ?? 'Guest User',
+                  gender: user?.gender ?? 'Male',
+                  passId: user?.memberId ?? 'GZ-GUEST',
+                  joinedAt: DateTime.now().subtract(Duration(days: user?.memberSinceDays ?? 0)),
+                  selfieFilePath: user?.selfieUrl,
+                ),
+              );
+            },
+            onFitnessCard: () {
+              final user = ref.read(authProvider).user;
+              context.pushNamed(
+                RouteNames.fitnessPass,
+                queryParameters: {'fromProfile': 'true'},
+                extra: FitnessPassData(
+                  fullName: user?.name ?? 'Guest User',
+                  gender: user?.gender ?? 'Male',
+                  passId: user?.memberId ?? 'GZ-GUEST',
+                  joinedAt: DateTime.now().subtract(Duration(days: user?.memberSinceDays ?? 0)),
+                  selfieFilePath: user?.selfieUrl,
+                ),
+              );
+            },
+            onBookingHistory: () => _onTabTapped(3),
             onWallet: () => _onTabTapped(2),
             onLogout: () async {
               await ref.read(authProvider.notifier).logout();

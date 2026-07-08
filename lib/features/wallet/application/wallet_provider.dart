@@ -36,6 +36,10 @@ class WalletNotifier extends AsyncNotifier<WalletData> {
       state = AsyncValue.error(e, stack);
     }
   }
+
+  void updateWallet(WalletData newWallet) {
+    state = AsyncValue.data(newWallet);
+  }
 }
 
 final walletProvider = AsyncNotifierProvider<WalletNotifier, WalletData>(WalletNotifier.new);

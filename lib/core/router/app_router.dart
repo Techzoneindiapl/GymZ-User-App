@@ -95,11 +95,14 @@ final GoRouter appRouter = GoRouter(
           passId: 'GZ-2026-08741',
           joinedAt: DateTime(2026, 6, 1),
         );
+        final fromProfile = state.uri.queryParameters['fromProfile'] == 'true';
         return _slide(
           state: state,
           child: FitnessPassScreen(
             pass: pass,
-            onContinue: () => context.goNamed(RouteNames.locationPermission),
+            onContinue: fromProfile
+                ? () => context.pop()
+                : () => context.goNamed(RouteNames.locationPermission),
           ),
         );
       },

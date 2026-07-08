@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -10,6 +11,9 @@ import '../../../../core/widgets/primary_button.dart';
 import '../../../home/domain/gym_model.dart';
 import '../../application/gym_detail_provider.dart';
 import '../widgets/booking_widgets.dart';
+import '../../data/repositories/booking_repository.dart';
+import '../../../wallet/application/wallet_provider.dart';
+import '../../../wallet/domain/wallet_model.dart';
 
 class GymDetailScreen extends ConsumerStatefulWidget {
   const GymDetailScreen({super.key, required this.gym, this.onBack, this.onBookNow, this.onShare});
@@ -62,19 +66,93 @@ class _GymDetailScreenState extends ConsumerState<GymDetailScreen> {
     }
 
     if (confirmResult == BookingDialogResult.confirm && mounted) {
-      final rand = Random();
-      final bookingId = 'GZ-BK-${10000 + rand.nextInt(90000)}';
-
-      await showDialog<void>(
+      // Show loading overlay
+      showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => BookingSuccessDialog(
-          gym: gym,
-          date: date,
-          time: time,
-          bookingId: bookingId,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
         ),
       );
+
+      final dateStr = DateFormat('yyyy-MM-dd').format(date);
+      final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+      final minute = time.minute.toString().padLeft(2, '0');
+      final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+      final timeSlotStr = '${hour.toString().padLeft(2, '0')}:$minute $period';
+
+      try {
+        final bookingRepository = ref.read(bookingRepositoryProvider);
+        final response = await bookingRepository.generateBooking(
+          gymId: gym.id,
+          bookingDate: dateStr,
+          timeSlot: timeSlotStr,
+        );
+
+        // Pop loading overlay
+        if (mounted) {
+          Navigator.pop(context);
+        }
+
+        // Update Wallet State instantly with the new balance and prepend the transaction
+        final newTx = WalletTransaction(
+          id: response.booking.id,
+          title: '${response.booking.gymName} — Single Session',
+          amount: response.booking.price,
+          type: 'debit',
+          createdAt: response.booking.createdAt ?? DateTime.now(),
+        );
+
+        final currentWallet = ref.read(walletProvider).value;
+        if (currentWallet != null) {
+          final updatedTxList = [newTx, ...currentWallet.transactions];
+          ref.read(walletProvider.notifier).updateWallet(
+            WalletData(
+              walletBalance: response.walletBalance,
+              transactions: updatedTxList,
+            ),
+          );
+        } else {
+          ref.read(walletProvider.notifier).updateWallet(
+            WalletData(
+              walletBalance: response.walletBalance,
+              transactions: [newTx],
+            ),
+          );
+        }
+
+        // Show BookingSuccessDialog with returned booking ID
+        if (mounted) {
+          await showDialog<void>(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => BookingSuccessDialog(
+              gym: gym,
+              date: date,
+              time: time,
+              bookingId: response.booking.bookingId,
+            ),
+          );
+        }
+      } catch (e) {
+        // Pop loading overlay
+        if (mounted) {
+          Navigator.pop(context);
+        }
+
+        // Show Error Snackbar
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: AppColors.danger,
+              content: Text(
+                e.toString().replaceAll('Exception: ', ''),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          );
+        }
+      }
     }
   }
 
