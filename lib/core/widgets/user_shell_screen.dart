@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/home/presentation/screens/home_screen.dart';
+import '../../features/explore/presentation/screens/explore_screen.dart';
 import '../../features/pass/presentation/screens/my_pass_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/wallet/presentation/screens/wallet_screen.dart';
 import '../../features/auth/application/auth_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -60,12 +62,23 @@ class _UserShellScreenState extends ConsumerState<UserShellScreen> {
     // Watch themeModeProvider so the bottom bar refreshes instantly on theme change
     ref.watch(themeModeProvider);
 
+    // Listen to changes in the shellTabIndexProvider (for programmatic switching from anywhere in the app)
+    ref.listen<int>(shellTabIndexProvider, (previous, next) {
+      if (_pageController.hasClients && _pageController.page?.round() != next) {
+        _pageController.animateToPage(
+          next,
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+        );
+      }
+    });
+
     return GradientScaffold(
       bottomBar: _UserBottomNavBar(currentIndex: currentIndex, tabs: _tabs, onTap: _onTabTapped),
       body: PageView(
         controller: _pageController,
         onPageChanged: _onPageChanged,
-        physics: NeverScrollableScrollPhysics(),
+        physics: const NeverScrollableScrollPhysics(),
         children: [
           HomeScreen(
             onGymTap: (gym) {
@@ -75,8 +88,18 @@ class _UserShellScreenState extends ConsumerState<UserShellScreen> {
                 extra: gym,
               );
             },
+            onPassTap: () => _onTabTapped(2),
           ),
-          const _ExplorePlaceholder(),
+          ExploreScreen(
+            onGymTap: (gym) {
+              context.pushNamed(
+                RouteNames.gymDetail,
+                pathParameters: {'id': gym.id},
+                extra: gym,
+              );
+            },
+          ),
+          const WalletScreen(),
           MyPassScreen(
             pass: PassData(
               memberName: 'Aasif Khan',
@@ -97,7 +120,6 @@ class _UserShellScreenState extends ConsumerState<UserShellScreen> {
               ),
             ],
           ),
-          const _PassesPlaceholder(),
           ProfileScreen(
             name: ref.watch(authProvider).user?.name ?? 'Guest User',
             email: ref.watch(authProvider).user?.email ?? 'guest@gymz.com',
@@ -106,6 +128,7 @@ class _UserShellScreenState extends ConsumerState<UserShellScreen> {
             sessionCount: ref.watch(authProvider).user?.sessionsCount ?? 0,
             gymCount: ref.watch(authProvider).user?.gymsCount ?? 0,
             memberSinceDays: ref.watch(authProvider).user?.memberSinceDays ?? 0,
+            onWallet: () => _onTabTapped(2),
             onLogout: () async {
               await ref.read(authProvider.notifier).logout();
               if (context.mounted) {
@@ -192,16 +215,4 @@ class _NavTab {
   final IconData activeIcon;
   final String label;
   final bool isCentral;
-}
-
-class _ExplorePlaceholder extends StatelessWidget {
-  const _ExplorePlaceholder();
-  @override
-  Widget build(BuildContext context) => const Center(child: Text('Explore', style: TextStyle(color: Colors.white, fontSize: 20)));
-}
-
-class _PassesPlaceholder extends StatelessWidget {
-  const _PassesPlaceholder();
-  @override
-  Widget build(BuildContext context) => const Center(child: Text('Passes', style: TextStyle(color: Colors.white, fontSize: 20)));
-}
+}
