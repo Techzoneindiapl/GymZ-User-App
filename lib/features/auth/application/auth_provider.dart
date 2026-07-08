@@ -189,6 +189,12 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
+  Future<void> updateUser(UserModel user) async {
+    final storage = ref.read(storageServiceProvider);
+    await storage.saveUser(user.toJson());
+    state = state.copyWith(user: user);
+  }
+
   Future<void> logout() async {
     final storage = ref.read(storageServiceProvider);
     await storage.clearAll();

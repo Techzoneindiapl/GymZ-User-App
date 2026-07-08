@@ -103,9 +103,9 @@ class _UserShellScreenState extends ConsumerState<UserShellScreen> {
             email: ref.watch(authProvider).user?.email ?? 'guest@gymz.com',
             memberId: ref.watch(authProvider).user?.memberId ?? 'GZ-GUEST',
             avatarPath: ref.watch(authProvider).user?.selfieUrl,
-            sessionCount: ref.watch(authProvider).user != null ? 42 : 0,
-            gymCount: ref.watch(authProvider).user != null ? 7 : 0,
-            memberSinceDays: ref.watch(authProvider).user != null ? 12 : 0,
+            sessionCount: ref.watch(authProvider).user?.sessionsCount ?? 0,
+            gymCount: ref.watch(authProvider).user?.gymsCount ?? 0,
+            memberSinceDays: ref.watch(authProvider).user?.memberSinceDays ?? 0,
             onLogout: () async {
               await ref.read(authProvider.notifier).logout();
               if (context.mounted) {

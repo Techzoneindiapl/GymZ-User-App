@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gymz_user/features/auth/domain/user_model.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/theme/theme_provider.dart';
 import '../../../../core/theme/text_size_provider.dart';
@@ -9,6 +11,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/gradient_scaffold.dart';
+import '../../application/profile_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({
@@ -50,192 +53,325 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
-  Widget build(BuildContext context) {
-    final themeMode = ref.watch(themeModeProvider);
-    final isDarkMode = themeMode == ThemeMode.dark;
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(profileProvider.notifier).fetchProfile();
+    });
+  }
 
-    return GradientScaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: AppSpacing.lg),
-            Text('Profile', style: AppTextStyles.displayMedium),
-            const SizedBox(height: AppSpacing.xl),
-            // Profile card.
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceCard,
-                borderRadius: BorderRadius.circular(AppRadius.xl),
-                border: Border.all(color: AppColors.surfaceCardBorder),
-              ),
-              child: Row(
-                children: [
-                  Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 36,
-                        backgroundColor: AppColors.iconCircleBg,
-                        backgroundImage: widget.avatarPath != null && widget.avatarPath!.isNotEmpty
-                            ? (widget.avatarPath!.startsWith('http')
-                                ? NetworkImage(widget.avatarPath!) as ImageProvider
-                                : FileImage(File(widget.avatarPath!)) as ImageProvider)
-                            : null,
-                        child: widget.avatarPath == null || widget.avatarPath!.isEmpty
-                            ? Icon(Icons.person, size: 36, color: AppColors.textSecondary)
-                            : null,
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          width: 22,
-                          height: 22,
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceCardSolid,
-                            shape: BoxShape.circle,
-                          ),
-                          alignment: Alignment.center,
-                          child:  Icon(Icons.camera_alt, size: 12, color: AppColors.primary),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: AppSpacing.lg),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(widget.name, style: AppTextStyles.sectionTitle),
-                        Text(widget.email, style: AppTextStyles.bodySmall),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          widget.memberId,
-                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
-                        ),
-                      ],
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: widget.onCardTap,
-                    style: TextButton.styleFrom(backgroundColor: AppColors.primary, shape: const StadiumBorder()),
-                    child: Text('Card', style: AppTextStyles.buttonLabel.copyWith(fontSize: 13)),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            // Stats row.
-            Row(
-              children: [
-                Expanded(child: _StatCard(value: '${widget.sessionCount}', label: 'SESSIONS', valueColor: AppColors.primary)),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(child: _StatCard(value: '${widget.gymCount}', label: 'GYMS', valueColor: AppColors.primary)),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(child: _StatCard(value: '${widget.memberSinceDays} Days', label: 'MEMBER SINCE', valueColor: AppColors.primary)),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            // Appearance toggle.
-            Text('APPEARANCE', style: AppTextStyles.label),
-            const SizedBox(height: AppSpacing.sm),
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceCard,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _ThemeToggleButton(
-                      icon: Icons.dark_mode_outlined,
-                      label: 'Dark Mode',
-                      isSelected: isDarkMode,
-                      onTap: () => ref.read(themeModeProvider.notifier).state = ThemeMode.dark,
-                    ),
-                  ),
-                  Expanded(
-                    child: _ThemeToggleButton(
-                      icon: Icons.light_mode_outlined,
-                      label: 'Light Mode',
-                      isSelected: !isDarkMode,
-                      onTap: () => ref.read(themeModeProvider.notifier).state = ThemeMode.light,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            // Text size toggle.
-            Text('TEXT SIZE', style: AppTextStyles.label),
-            const SizedBox(height: AppSpacing.sm),
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceCard,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _TextSizeToggleButton(
-                      label: 'Medium',
-                      isSelected: ref.watch(textSizeProvider) == TextSizeScale.medium,
-                      onTap: () => ref.read(textSizeProvider.notifier).state = TextSizeScale.medium,
-                    ),
-                  ),
-                  Expanded(
-                    child: _TextSizeToggleButton(
-                      label: 'Large',
-                      isSelected: ref.watch(textSizeProvider) == TextSizeScale.large,
-                      onTap: () => ref.read(textSizeProvider.notifier).state = TextSizeScale.large,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            // Menu list.
-            _MenuCard(
-              items: [
-                _MenuItem(icon: Icons.card_giftcard_outlined, label: 'Rewards', subtitle: 'Unlock after every 50 sessions', onTap: widget.onRewards),
-                _MenuItem(icon: Icons.credit_card_outlined, label: 'Fitness Card', onTap: widget.onFitnessCard),
-                _MenuItem(icon: Icons.history_outlined, label: 'Booking History', onTap: widget.onBookingHistory),
-                _MenuItem(icon: Icons.wallet_outlined, label: 'Wallet', onTap: widget.onWallet),
-                _MenuItem(icon: Icons.settings_outlined, label: 'Settings', onTap: widget.onSettings),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            // Logout.
-            Material(
-              color: AppColors.surfaceCard,
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                onTap: widget.onLogout,
-                child: Container(
-                  height: 56,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                    border: Border.all(color: AppColors.danger.withOpacity(0.4)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.logout, size: 18, color: AppColors.danger),
-                      const SizedBox(width: AppSpacing.sm),
-                      Text('Logout', style: AppTextStyles.buttonLabel.copyWith(color: AppColors.danger)),
-                    ],
+  Future<void> _showImageSourceActionSheet(BuildContext context) async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surfaceCardSolid,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: Text(
+                    'Update Profile Photo',
+                    style: AppTextStyles.sectionTitle,
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.xxxl),
-          ],
+              ListTile(
+                leading:  Icon(Icons.photo_library, color: AppColors.primary),
+                title: const Text('Choose from Gallery', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading:  Icon(Icons.photo_camera, color: AppColors.primary),
+                title: const Text('Take Photo', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        await ref.read(profileProvider.notifier).uploadProfileImage(pickedFile.path);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to pick image: $e'),
+            backgroundColor: AppColors.danger,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final themeMode = ref.watch(themeModeProvider);
+    final isDarkMode = themeMode == ThemeMode.dark;
+    final profileState = ref.watch(profileProvider);
+
+    ref.listen<AsyncValue<UserModel?>>(profileProvider, (previous, next) {
+      if (next.hasError && !next.isLoading) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.error.toString().replaceAll('Exception: ', '')),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    });
+
+    return GradientScaffold(
+      body: RefreshIndicator(
+        onRefresh: () => ref.read(profileProvider.notifier).refreshProfile(),
+        color: AppColors.primary,
+        backgroundColor: AppColors.surfaceCard,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: AppSpacing.lg),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Profile', style: AppTextStyles.displayMedium),
+                  if (profileState.isLoading)
+                      SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              // Profile card.
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceCard,
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
+                  border: Border.all(color: AppColors.surfaceCardBorder),
+                ),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => _showImageSourceActionSheet(context),
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 36,
+                            backgroundColor: AppColors.iconCircleBg,
+                            backgroundImage: widget.avatarPath != null && widget.avatarPath!.isNotEmpty
+                                ? (widget.avatarPath!.startsWith('http')
+                                    ? NetworkImage(widget.avatarPath!) as ImageProvider
+                                    : FileImage(File(widget.avatarPath!)) as ImageProvider)
+                                : null,
+                            child: widget.avatarPath == null || widget.avatarPath!.isEmpty
+                                ? Icon(Icons.person, size: 36, color: AppColors.textSecondary)
+                                : null,
+                          ),
+                          if (profileState.isLoading)
+                            Positioned.fill(
+                              child: Container(
+                                decoration: const BoxDecoration(
+                                  color: Colors.black54,
+                                  shape: BoxShape.circle,
+                                ),
+                                child:  Center(
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              width: 22,
+                              height: 22,
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceCardSolid,
+                                shape: BoxShape.circle,
+                              ),
+                              alignment: Alignment.center,
+                              child:   Icon(Icons.camera_alt, size: 12, color: AppColors.primary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.lg),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(widget.name, style: AppTextStyles.sectionTitle),
+                          Text(widget.email, style: AppTextStyles.bodySmall),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            widget.memberId,
+                            style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: widget.onCardTap,
+                      style: TextButton.styleFrom(backgroundColor: AppColors.primary, shape: const StadiumBorder()),
+                      child: Text('Card', style: AppTextStyles.buttonLabel.copyWith(fontSize: 13)),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              // Stats row.
+              Row(
+                children: [
+                  Expanded(child: _StatCard(value: '${widget.sessionCount}', label: 'SESSIONS', valueColor: AppColors.primary)),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(child: _StatCard(value: '${widget.gymCount}', label: 'GYMS', valueColor: AppColors.primary)),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(child: _StatCard(value: '${widget.memberSinceDays} Days', label: 'MEMBER SINCE', valueColor: AppColors.primary)),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              // Appearance toggle.
+              Text('APPEARANCE', style: AppTextStyles.label),
+              const SizedBox(height: AppSpacing.sm),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceCard,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _ThemeToggleButton(
+                        icon: Icons.dark_mode_outlined,
+                        label: 'Dark Mode',
+                        isSelected: isDarkMode,
+                        onTap: () => ref.read(themeModeProvider.notifier).state = ThemeMode.dark,
+                      ),
+                    ),
+                    Expanded(
+                      child: _ThemeToggleButton(
+                        icon: Icons.light_mode_outlined,
+                        label: 'Light Mode',
+                        isSelected: !isDarkMode,
+                        onTap: () => ref.read(themeModeProvider.notifier).state = ThemeMode.light,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              // Text size toggle.
+              Text('TEXT SIZE', style: AppTextStyles.label),
+              const SizedBox(height: AppSpacing.sm),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceCard,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _TextSizeToggleButton(
+                        label: 'Medium',
+                        isSelected: ref.watch(textSizeProvider) == TextSizeScale.medium,
+                        onTap: () => ref.read(textSizeProvider.notifier).state = TextSizeScale.medium,
+                      ),
+                    ),
+                    Expanded(
+                      child: _TextSizeToggleButton(
+                        label: 'Large',
+                        isSelected: ref.watch(textSizeProvider) == TextSizeScale.large,
+                        onTap: () => ref.read(textSizeProvider.notifier).state = TextSizeScale.large,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              // Menu list.
+              _MenuCard(
+                items: [
+                  _MenuItem(icon: Icons.card_giftcard_outlined, label: 'Rewards', subtitle: 'Unlock after every 50 sessions', onTap: widget.onRewards),
+                  _MenuItem(icon: Icons.credit_card_outlined, label: 'Fitness Card', onTap: widget.onFitnessCard),
+                  _MenuItem(icon: Icons.history_outlined, label: 'Booking History', onTap: widget.onBookingHistory),
+                  _MenuItem(icon: Icons.wallet_outlined, label: 'Wallet', onTap: widget.onWallet),
+                  _MenuItem(icon: Icons.settings_outlined, label: 'Settings', onTap: widget.onSettings),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              // Logout.
+              Material(
+                color: AppColors.surfaceCard,
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  onTap: widget.onLogout,
+                  child: Container(
+                    height: 56,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      border: Border.all(color: AppColors.danger.withOpacity(0.4)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.logout, size: 18, color: AppColors.danger),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text('Logout', style: AppTextStyles.buttonLabel.copyWith(color: AppColors.danger)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xxxl),
+            ],
+          ),
         ),
       ),
     );
