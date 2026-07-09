@@ -38,6 +38,10 @@ dependencies:
   characters: ^1.3.0
   flutter_local_notifications: ^18.0.1
   flutter_svg: ^2.0.10+1
+  path_provider: ^2.1.3
+  share_plus: ^10.1.2
+  gal: ^2.3.2
+
 
 dev_dependencies:
   flutter_test:

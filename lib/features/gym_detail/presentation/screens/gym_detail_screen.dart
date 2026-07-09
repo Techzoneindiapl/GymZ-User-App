@@ -14,6 +14,7 @@ import '../widgets/booking_widgets.dart';
 import '../../data/repositories/booking_repository.dart';
 import '../../../wallet/application/wallet_provider.dart';
 import '../../../wallet/domain/wallet_model.dart';
+import '../../../pass/application/booking_history_provider.dart';
 
 class GymDetailScreen extends ConsumerStatefulWidget {
   const GymDetailScreen({super.key, required this.gym, this.onBack, this.onBookNow, this.onShare});
@@ -93,6 +94,9 @@ class _GymDetailScreenState extends ConsumerState<GymDetailScreen> {
         if (mounted) {
           Navigator.pop(context);
         }
+
+        // Prepend the new booking to the booking history provider
+        ref.read(bookingHistoryProvider.notifier).addBooking(response.booking);
 
         // Update Wallet State instantly with the new balance and prepend the transaction
         final newTx = WalletTransaction(

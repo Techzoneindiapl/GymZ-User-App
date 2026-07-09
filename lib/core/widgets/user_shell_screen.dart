@@ -101,26 +101,7 @@ class _UserShellScreenState extends ConsumerState<UserShellScreen> {
             },
           ),
           const WalletScreen(),
-          MyPassScreen(
-            pass: PassData(
-              memberName: 'Aasif Khan',
-              gymName: 'Iron Forge Studio',
-              passId: 'GZ-P-08741',
-              date: DateTime(2026, 6, 18),
-              time: '7:30 PM',
-              tier: 'Platinum',
-            ),
-            upcomingPasses: const [
-              UpcomingPass(
-                gymName: 'Lotus Yoga Sanctuary',
-                date: '20 Jun',
-                time: '6:30 AM',
-                session: 'Hatha',
-                dayOfMonth: 20,
-                isActive: true,
-              ),
-            ],
-          ),
+          const MyPassScreen(),
           ProfileScreen(
             name: ref.watch(authProvider).user?.name ?? 'Guest User',
             email: ref.watch(authProvider).user?.email ?? 'guest@gymz.com',

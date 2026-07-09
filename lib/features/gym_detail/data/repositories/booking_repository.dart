@@ -58,6 +58,29 @@ class BookingRepository {
       rethrow;
     }
   }
+
+  /// Get booking history.
+  /// GET api/v1/user/bookings
+  Future<List<BookingModel>> getBookingHistory() async {
+    try {
+      final response = await _apiClient.get('api/v1/user/bookings');
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is Map<String, dynamic> && data['success'] == true) {
+          final listData = data['data'];
+          if (listData is List) {
+            return listData
+                .map((e) => BookingModel.fromJson(e as Map<String, dynamic>))
+                .toList();
+          }
+        }
+      }
+      throw Exception('Failed to load booking history');
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
 
 final bookingRepositoryProvider = Provider<BookingRepository>((ref) {
