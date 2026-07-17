@@ -9,6 +9,8 @@ import '../../../../core/widgets/gradient_scaffold.dart';
 import '../../../../core/widgets/user_shell_screen.dart';
 import '../../application/wallet_provider.dart';
 import '../../domain/wallet_model.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
+
 
 class WalletScreen extends ConsumerStatefulWidget {
   const WalletScreen({super.key});
@@ -228,10 +230,14 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               const SizedBox(height: AppSpacing.md),
               walletState.when(
                 data: (walletData) => _buildTransactionList(walletData.transactions),
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24.0),
-                    child: CircularProgressIndicator(),
+                loading: () => const ShimmerLoading(
+                  child: Column(
+                    children: [
+                      _TransactionItemSkeleton(),
+                      _TransactionItemSkeleton(),
+                      _TransactionItemSkeleton(),
+                      _TransactionItemSkeleton(),
+                    ],
                   ),
                 ),
                 error: (error, _) => Center(
@@ -344,6 +350,42 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
   }
 
   Widget _buildBalanceCardPlaceholder({bool isLoading = false, bool hasError = false}) {
+    if (isLoading) {
+      return ShimmerLoading(
+        child: Container(
+          width: double.infinity,
+          height: 172,
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceCard,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.surfaceCardBorder),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      ShimmerBlock(width: 100, height: 12),
+                      SizedBox(height: AppSpacing.sm),
+                      ShimmerBlock(width: 120, height: 28),
+                    ],
+                  ),
+                  const ShimmerBlock(width: 48, height: 48, borderRadius: 24),
+                ],
+              ),
+              const Spacer(),
+              const ShimmerBlock(width: double.infinity, height: 52, borderRadius: AppRadius.pill),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Container(
       width: double.infinity,
       height: 172,
@@ -354,19 +396,17 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
         border: Border.all(color: AppColors.surfaceCardBorder),
       ),
       child: Center(
-        child: isLoading
-            ? const CircularProgressIndicator()
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.orange, size: 36),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    'Failed to load balance',
-                    style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.orange, size: 36),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Failed to load balance',
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -471,3 +511,41 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     );
   }
 }
+
+class _TransactionItemSkeleton extends StatelessWidget {
+  const _TransactionItemSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceCard,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.surfaceCardBorder),
+        ),
+        child: Row(
+          children: [
+            const ShimmerBlock(width: 44, height: 44, borderRadius: 22),
+            const SizedBox(width: AppSpacing.lg),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  ShimmerBlock(width: 140, height: 14),
+                  SizedBox(height: 6),
+                  ShimmerBlock(width: 80, height: 10),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            const ShimmerBlock(width: 50, height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

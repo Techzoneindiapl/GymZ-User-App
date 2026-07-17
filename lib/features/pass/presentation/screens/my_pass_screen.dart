@@ -19,6 +19,8 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/gradient_scaffold.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/user_shell_screen.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
+
 
 class MyPassScreen extends ConsumerStatefulWidget {
   const MyPassScreen({super.key});
@@ -169,8 +171,8 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
 
     return GradientScaffold(
       body: bookingsState.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
+        loading: () => const ShimmerLoading(
+          child: _MyPassScreenSkeleton(),
         ),
         error: (error, stack) => Center(
           child: Padding(
@@ -581,6 +583,173 @@ class _EmptyPassState extends StatelessWidget {
               onPressed: () {
                 ref.read(shellTabIndexProvider.notifier).state = 1;
               },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MyPassScreenSkeleton extends StatelessWidget {
+  const _MyPassScreenSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: AppSpacing.lg),
+          Text('My Pass', style: AppTextStyles.displayMedium),
+          const SizedBox(height: AppSpacing.xl),
+          
+          // Card skeleton container
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceCard,
+              borderRadius: BorderRadius.circular(AppRadius.xxl),
+              border: Border.all(color: AppColors.surfaceCardBorder),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    ShimmerBlock(width: 80, height: 24),
+                    ShimmerBlock(width: 80, height: 24, borderRadius: 6),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                const ShimmerBlock(width: 60, height: 12),
+                const SizedBox(height: AppSpacing.sm),
+                const ShimmerBlock(width: 180, height: 28),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  children: const [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ShimmerBlock(width: 40, height: 10),
+                          SizedBox(height: 4),
+                          ShimmerBlock(width: 100, height: 16),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ShimmerBlock(width: 50, height: 10),
+                          SizedBox(height: 4),
+                          ShimmerBlock(width: 80, height: 16),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  children: const [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ShimmerBlock(width: 40, height: 10),
+                          SizedBox(height: 4),
+                          ShimmerBlock(width: 90, height: 16),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ShimmerBlock(width: 40, height: 10),
+                          SizedBox(height: 4),
+                          ShimmerBlock(width: 70, height: 16),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                Container(height: 1, color: AppColors.divider),
+                const SizedBox(height: AppSpacing.xl),
+                Row(
+                  children: [
+                    const ShimmerBlock(width: 72, height: 72),
+                    const SizedBox(width: AppSpacing.xl),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          ShimmerBlock(width: double.infinity, height: 12),
+                          SizedBox(height: 6),
+                          ShimmerBlock(width: 80, height: 14),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          // Download / Share buttons
+          Row(
+            children: const [
+              Expanded(
+                child: ShimmerBlock(width: double.infinity, height: 56, borderRadius: AppRadius.pill),
+              ),
+              SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: ShimmerBlock(width: double.infinity, height: 56, borderRadius: AppRadius.pill),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xxl),
+          Text('Upcoming Passes', style: AppTextStyles.sectionTitle),
+          const SizedBox(height: AppSpacing.md),
+          // Upcoming list items
+          _UpcomingPassSkeleton(),
+          const SizedBox(height: AppSpacing.md),
+          _UpcomingPassSkeleton(),
+        ],
+      ),
+    );
+  }
+}
+
+class _UpcomingPassSkeleton extends StatelessWidget {
+  const _UpcomingPassSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.surfaceCardBorder),
+      ),
+      child: Row(
+        children: [
+          const ShimmerBlock(width: 44, height: 44, borderRadius: AppRadius.md),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                ShimmerBlock(width: 140, height: 14),
+                SizedBox(height: 6),
+                ShimmerBlock(width: 180, height: 12),
+              ],
             ),
           ),
         ],
