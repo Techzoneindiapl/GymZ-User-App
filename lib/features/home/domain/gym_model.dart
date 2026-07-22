@@ -59,6 +59,8 @@ class GymModel {
     this.galleryPhotos = const [],
     this.introVideo,
     this.sessionPricing,
+    this.gender = 'Unisex',
+    this.reviewsCount = 0,
   });
 
   final String id;
@@ -80,6 +82,8 @@ class GymModel {
   final List<String> galleryPhotos;
   final String? introVideo;
   final SessionPricing? sessionPricing;
+  final String gender;
+  final int reviewsCount;
 
   String get distanceLabel => '${distanceKm.toStringAsFixed(1)} km';
   String get timingLabel => '$openingTime – $closingTime';
@@ -89,6 +93,8 @@ class GymModel {
     List<String>? galleryPhotos,
     String? introVideo,
     SessionPricing? sessionPricing,
+    String? gender,
+    int? reviewsCount,
   }) {
     return GymModel(
       id: id,
@@ -110,6 +116,8 @@ class GymModel {
       galleryPhotos: galleryPhotos ?? this.galleryPhotos,
       introVideo: introVideo ?? this.introVideo,
       sessionPricing: sessionPricing ?? this.sessionPricing,
+      gender: gender ?? this.gender,
+      reviewsCount: reviewsCount ?? this.reviewsCount,
     );
   }
 
@@ -254,14 +262,16 @@ class GymModel {
     
     final price = (json['averagePrice'] as num?)?.toInt() ?? 0;
     
-    String tier = json['tier'] ?? 'Silver';
-    if (tier == 'Silver') {
+    String tier = json['tier']?.toString() ?? '';
+    if (tier.isEmpty || tier == 'Silver') {
       if (price >= 400) {
         tier = 'Platinum';
       } else if (price >= 300) {
         tier = 'Diamond';
       } else if (price >= 200) {
         tier = 'Gold';
+      } else {
+        tier = 'Silver';
       }
     }
     
@@ -272,8 +282,23 @@ class GymModel {
     final loc = json['location'] as Map<String, dynamic>?;
     final address = loc?['address'] ?? json['address'] ?? '';
     
-    final lat = (loc?['latitude'] as num?)?.toDouble() ?? 19.0760;
-    final lon = (loc?['longitude'] as num?)?.toDouble() ?? 72.8777;
+    double? parsedLat;
+    final rawLat = loc?['latitude'] ?? json['latitude'];
+    if (rawLat is num) {
+      parsedLat = rawLat.toDouble();
+    } else if (rawLat is String) {
+      parsedLat = double.tryParse(rawLat);
+    }
+    final lat = parsedLat ?? 19.0760;
+
+    double? parsedLon;
+    final rawLon = loc?['longitude'] ?? json['longitude'];
+    if (rawLon is num) {
+      parsedLon = rawLon.toDouble();
+    } else if (rawLon is String) {
+      parsedLon = double.tryParse(rawLon);
+    }
+    final lon = parsedLon ?? 72.8777;
 
     final rating = (json['rating'] as num?)?.toDouble() ?? (4.0 + (id.hashCode % 10) / 10.0);
 
@@ -300,6 +325,8 @@ class GymModel {
     }
 
     final description = json['description'] ?? 'Premium training facility equipped with modern amenities and certified trainers. Access all features with your GYMZ pass.';
+    final gender = json['gender'] ?? 'Unisex';
+    final reviewsCount = (json['reviewsCount'] as num?)?.toInt() ?? 0;
 
     final rawPricing = json['sessionPricing'];
     final sessionPricing = rawPricing != null ? SessionPricing.fromJson(rawPricing as Map<String, dynamic>) : null;
@@ -324,6 +351,8 @@ class GymModel {
       galleryPhotos: galleryPhotos,
       introVideo: introVideo,
       sessionPricing: sessionPricing,
+      reviewsCount: reviewsCount,
+      gender: gender,
     );
   }
 }
@@ -346,6 +375,7 @@ const List<GymModel> kSampleGyms = [
     usageInstructions: ['Gym shoes required', 'Carry your own water bottle', 'No outside food'],
     latitude: 19.0782,
     longitude: 72.8801,
+    gender: 'Unisex',
   ),
   GymModel(
     id: 'g2',
@@ -364,6 +394,7 @@ const List<GymModel> kSampleGyms = [
     usageInstructions: ['Bring your own mat', 'Arrive 5 min early', 'Silence phones'],
     latitude: 19.0805,
     longitude: 72.8752,
+    gender: 'Female',
   ),
 ];
 

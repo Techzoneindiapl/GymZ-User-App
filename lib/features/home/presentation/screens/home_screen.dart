@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gymz_user/features/home/domain/gym_model.dart';
@@ -72,150 +73,174 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final filteredGymsAsync = ref.watch(filteredGymsProvider);
     final selectedCategory = ref.watch(selectedCategoryProvider);
+    final selectedTiers = ref.watch(selectedTiersProvider);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xxxl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: AppSpacing.lg),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-            child: _HomeHeader(
-              firstName: widget.ownerFirstName,
-              avatarPath: widget.avatarPath,
-              onNotificationTap: widget.onNotificationTap,
-              onPassTap: widget.onPassTap,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-            child: SearchBarWidget(
-              controller: _searchController,
-              onChanged: (val) {
-                ref.read(gymSearchQueryProvider.notifier).state = val;
-              },
-              onFilterTap: widget.onFilterTap ?? _showFilterBottomSheet,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xxl),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-            child: _SectionHeader(title: 'Categories', onSeeAll: () {}),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          SizedBox(
-            height: 90,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
+    return RefreshIndicator(
+      onRefresh: () async {
+        await ref.refresh(gymsListProvider.future);
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: AppSpacing.xxxl),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: AppSpacing.lg),
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-              itemCount: kCategories.length,
-              separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-              itemBuilder: (context, index) {
-                final category = kCategories[index];
-                final isSelected = selectedCategory == category;
-                return CategoryChip(
-                  label: category,
-                  isSelected: isSelected,
-                  onTap: () {
-                    final notifier = ref.read(selectedCategoryProvider.notifier);
-                    if (isSelected) {
-                      notifier.state = null;
-                    } else {
-                      notifier.state = category;
-                    }
-                    widget.onCategoryTap?.call(category);
-                  },
-                );
-              },
+              child: _HomeHeader(
+                firstName: widget.ownerFirstName,
+                avatarPath: widget.avatarPath,
+                onNotificationTap: widget.onNotificationTap,
+                onPassTap: widget.onPassTap,
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.xxl),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-            child: _SectionHeader(title: 'Nearby Gyms', onSeeAll: widget.onSeeAllNearby),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          filteredGymsAsync.when(
-            data: (filteredGyms) {
-              if (filteredGyms.isEmpty) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
-                  child: Center(
-                    child: Text(
-                      'No gyms found matching your criteria.',
-                      style: TextStyle(color: AppColors.textMuted, fontSize: 16),
-                    ),
-                  ),
-                );
-              }
-              return Column(
+            const SizedBox(height: AppSpacing.xl),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+              child: SearchBarWidget(
+                controller: _searchController,
+                onChanged: (val) {
+                  ref.read(gymSearchQueryProvider.notifier).state = val;
+                },
+                onFilterTap: widget.onFilterTap ?? _showFilterBottomSheet,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xxl),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+              child: _SectionHeader(title: 'Categories', onSeeAll: () {}),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  for (final gym in filteredGyms)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.lg),
-                      child: GymCard(
-                        gym: gym,
-                        onTap: () => widget.onGymTap?.call(gym),
-                      ),
+                  for (final category in kCategories)
+                    Builder(
+                      builder: (context) {
+                        final isSelected = selectedCategory == category;
+                        return CategoryChip(
+                          label: category,
+                          isSelected: isSelected,
+                          onTap: () {
+                            final notifier = ref.read(selectedCategoryProvider.notifier);
+                            if (isSelected) {
+                              notifier.state = null;
+                            } else {
+                              notifier.state = category;
+                            }
+                            widget.onCategoryTap?.call(category);
+                          },
+                        );
+                      },
                     ),
-                ],
-              );
-            },
-            loading: () => const ShimmerLoading(
-              child: Column(
-                children: [
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.lg),
-                    child: GymCardSkeleton(),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.lg),
-                    child: GymCardSkeleton(),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.lg),
-                    child: GymCardSkeleton(),
-                  ),
                 ],
               ),
             ),
-            error: (err, stack) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
-              child: Center(
-                child: Text(
-                  'Error loading gyms: ${err.toString().replaceAll('Exception: ', '')}',
-                  style:  TextStyle(color: AppColors.danger, fontSize: 16),
-                  textAlign: TextAlign.center,
+            const SizedBox(height: AppSpacing.xxl),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+              child: _SectionHeader(title: 'Nearby Gyms', onSeeAll: widget.onSeeAllNearby),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            filteredGymsAsync.when(
+              data: (filteredGyms) {
+                if (filteredGyms.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
+                    child: Center(
+                      child: Text(
+                        'No gyms found matching your criteria.',
+                        style: TextStyle(color: AppColors.textMuted, fontSize: 16),
+                      ),
+                    ),
+                  );
+                }
+                return Column(
+                  children: [
+                    for (final gym in filteredGyms)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.lg),
+                        child: GymCard(
+                          gym: gym,
+                          onTap: () => widget.onGymTap?.call(gym),
+                        ),
+                      ),
+                  ],
+                );
+              },
+              loading: () => const ShimmerLoading(
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.lg),
+                      child: GymCardSkeleton(),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.lg),
+                      child: GymCardSkeleton(),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.lg),
+                      child: GymCardSkeleton(),
+                    ),
+                  ],
+                ),
+              ),
+              error: (err, stack) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
+                child: Center(
+                  child: Text(
+                    'Error loading gyms: ${err.toString().replaceAll('Exception: ', '')}',
+                    style:  TextStyle(color: AppColors.danger, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-            child: _SectionHeader(title: 'Premium Tiers', onSeeAll: widget.onSeeAllTiers),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-            child: GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              crossAxisSpacing: AppSpacing.md,
-              mainAxisSpacing: AppSpacing.md,
-              childAspectRatio: 1.8,
-              children: const [
-                PremiumTierCard(tier: 'Platinum'),
-                PremiumTierCard(tier: 'Diamond'),
-                PremiumTierCard(tier: 'Gold'),
-                PremiumTierCard(tier: 'Silver'),
-              ],
+            const SizedBox(height: AppSpacing.sm),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+              child: _SectionHeader(title: 'Premium Tiers', onSeeAll: widget.onSeeAllTiers),
             ),
-          ),
-        ],
+            const SizedBox(height: AppSpacing.md),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+              child: GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                crossAxisSpacing: AppSpacing.md,
+                mainAxisSpacing: AppSpacing.md,
+                childAspectRatio: 1.8,
+                children: [
+                  for (final tier in ['Platinum', 'Diamond', 'Gold', 'Silver'])
+                    Builder(
+                      builder: (context) {
+                        final isSelected = selectedTiers.contains(tier);
+                        return PremiumTierCard(
+                          tier: tier,
+                          isSelected: isSelected,
+                          onTap: () {
+                            final current = ref.read(selectedTiersProvider);
+                            if (isSelected) {
+                              ref.read(selectedTiersProvider.notifier).state =
+                                  current.where((t) => t != tier).toList();
+                            } else {
+                              ref.read(selectedTiersProvider.notifier).state =
+                                  [...current, tier];
+                            }
+                          },
+                        );
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -241,8 +266,12 @@ class _HomeHeader extends StatelessWidget {
         CircleAvatar(
           radius: 24,
           backgroundColor: AppColors.surfaceCard,
-          backgroundImage: avatarPath != null ? AssetImage(avatarPath!) : null,
-          child: avatarPath == null
+          backgroundImage: avatarPath != null && avatarPath!.isNotEmpty
+              ? (avatarPath!.startsWith('http')
+                  ? NetworkImage(avatarPath!) as ImageProvider
+                  : FileImage(File(avatarPath!)) as ImageProvider)
+              : null,
+          child: avatarPath == null || avatarPath!.isEmpty
               ? Icon(Icons.person, color: AppColors.textSecondary)
               : null,
         ),

@@ -19,6 +19,17 @@ class GymCard extends StatelessWidget {
     }
   }
 
+  Color _getGenderColor(String gender) {
+    switch (gender.toLowerCase()) {
+      case 'male':
+        return Colors.blueAccent;
+      case 'female':
+        return Colors.pinkAccent;
+      default:
+        return Colors.purpleAccent;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -55,17 +66,40 @@ class GymCard extends StatelessWidget {
                 ),
               ),
             ),
-            // Category badge (top left).
+            // Category & Gender badges (top left).
             Positioned(
               top: AppSpacing.md,
               left: AppSpacing.md,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                ),
-                child: Text(gym.category, style: AppTextStyles.caption.copyWith(color: Colors.white)),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                    ),
+                    child: Text(gym.category, style: AppTextStyles.caption.copyWith(color: Colors.white)),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      border: Border.all(
+                        color: _getGenderColor(gym.gender),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      gym.gender,
+                      style: AppTextStyles.caption.copyWith(
+                        color: _getGenderColor(gym.gender),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             // Tier badge (top right).

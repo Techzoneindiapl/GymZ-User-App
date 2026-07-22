@@ -177,88 +177,95 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               const SizedBox(height: AppSpacing.xl),
               // Profile card.
-              Container(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceCard,
+              Material(
+                color: AppColors.surfaceCard,
+                borderRadius: BorderRadius.circular(AppRadius.xl),
+                child: InkWell(
+                  onTap: widget.onCardTap,
                   borderRadius: BorderRadius.circular(AppRadius.xl),
-                  border: Border.all(color: AppColors.surfaceCardBorder),
-                ),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => _showImageSourceActionSheet(context),
-                      child: Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 36,
-                            backgroundColor: AppColors.iconCircleBg,
-                            backgroundImage: widget.avatarPath != null && widget.avatarPath!.isNotEmpty
-                                ? (widget.avatarPath!.startsWith('http')
-                                    ? NetworkImage(widget.avatarPath!) as ImageProvider
-                                    : FileImage(File(widget.avatarPath!)) as ImageProvider)
-                                : null,
-                            child: widget.avatarPath == null || widget.avatarPath!.isEmpty
-                                ? Icon(Icons.person, size: 36, color: AppColors.textSecondary)
-                                : null,
-                          ),
-                          if (profileState.isLoading)
-                            Positioned.fill(
-                              child: Container(
-                                decoration: const BoxDecoration(
-                                  color: Colors.black54,
-                                  shape: BoxShape.circle,
-                                ),
-                                child:  Center(
-                                  child: SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  child: Container(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.surfaceCardBorder),
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                    ),
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => _showImageSourceActionSheet(context),
+                          child: Stack(
+                            children: [
+                              CircleAvatar(
+                                radius: 36,
+                                backgroundColor: AppColors.iconCircleBg,
+                                backgroundImage: widget.avatarPath != null && widget.avatarPath!.isNotEmpty
+                                    ? (widget.avatarPath!.startsWith('http')
+                                        ? NetworkImage(widget.avatarPath!) as ImageProvider
+                                        : FileImage(File(widget.avatarPath!)) as ImageProvider)
+                                    : null,
+                                child: widget.avatarPath == null || widget.avatarPath!.isEmpty
+                                    ? Icon(Icons.person, size: 36, color: AppColors.textSecondary)
+                                    : null,
+                              ),
+                              if (profileState.isLoading)
+                                Positioned.fill(
+                                  child: Container(
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black54,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child:  Center(
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  width: 22,
+                                  height: 22,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surfaceCardSolid,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child:   Icon(Icons.camera_alt, size: 12, color: AppColors.primary),
+                                ),
                               ),
-                            ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              width: 22,
-                              height: 22,
-                              decoration: BoxDecoration(
-                                color: AppColors.surfaceCardSolid,
-                                shape: BoxShape.circle,
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.lg),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(widget.name, style: AppTextStyles.sectionTitle),
+                              Text(widget.email, style: AppTextStyles.bodySmall),
+                              const SizedBox(height: AppSpacing.xs),
+                              Text(
+                                widget.memberId,
+                                style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
                               ),
-                              alignment: Alignment.center,
-                              child:   Icon(Icons.camera_alt, size: 12, color: AppColors.primary),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                        TextButton(
+                          onPressed: widget.onCardTap,
+                          style: TextButton.styleFrom(backgroundColor: AppColors.primary, shape: const StadiumBorder()),
+                          child: Text('Card', style: AppTextStyles.buttonLabel.copyWith(fontSize: 13)),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: AppSpacing.lg),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(widget.name, style: AppTextStyles.sectionTitle),
-                          Text(widget.email, style: AppTextStyles.bodySmall),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            widget.memberId,
-                            style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
-                          ),
-                        ],
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: widget.onCardTap,
-                      style: TextButton.styleFrom(backgroundColor: AppColors.primary, shape: const StadiumBorder()),
-                      child: Text('Card', style: AppTextStyles.buttonLabel.copyWith(fontSize: 13)),
-                    ),
-                  ],
+                  ),
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),

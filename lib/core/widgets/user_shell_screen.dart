@@ -82,6 +82,8 @@ class _UserShellScreenState extends ConsumerState<UserShellScreen> {
         physics: const NeverScrollableScrollPhysics(),
         children: [
           HomeScreen(
+            ownerFirstName: ref.watch(authProvider).user?.name ?? 'Guest User',
+            avatarPath: ref.watch(authProvider).user?.selfieUrl,
             onGymTap: (gym) {
               context.pushNamed(
                 RouteNames.gymDetail,

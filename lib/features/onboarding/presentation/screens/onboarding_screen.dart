@@ -11,6 +11,7 @@ import '../../domain/onboarding_slide.dart';
 import '../../../auth/application/auth_provider.dart';
 import '../../../../core/router/route_names.dart';
 import 'package:go_router/go_router.dart';
+import 'package:geolocator/geolocator.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key, this.onSkip, this.onGetStarted});
@@ -53,17 +54,35 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AuthState>(authProvider, (previous, next) {
+    ref.listen<AuthState>(authProvider, (previous, next) async {
       if (next.status == AuthStatus.authenticated && mounted) {
-        context.goNamed(RouteNames.home);
+        final permission = await Geolocator.checkPermission();
+        final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        final hasPermission = permission == LocationPermission.whileInUse || permission == LocationPermission.always;
+        if (mounted) {
+          if (!hasPermission || !serviceEnabled) {
+            context.goNamed(RouteNames.locationPermission);
+          } else {
+            context.goNamed(RouteNames.home);
+          }
+        }
       }
     });
 
     final authState = ref.read(authProvider);
     if (authState.status == AuthStatus.authenticated) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (mounted) {
-          context.goNamed(RouteNames.home);
+          final permission = await Geolocator.checkPermission();
+          final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+          final hasPermission = permission == LocationPermission.whileInUse || permission == LocationPermission.always;
+          if (mounted) {
+            if (!hasPermission || !serviceEnabled) {
+              context.goNamed(RouteNames.locationPermission);
+            } else {
+              context.goNamed(RouteNames.home);
+            }
+          }
         }
       });
     }

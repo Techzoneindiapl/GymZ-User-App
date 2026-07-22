@@ -15,14 +15,23 @@ class LocationPermissionScreen extends ConsumerWidget {
   final VoidCallback? onNotNow;
 
   Future<void> _handleAllowAccess(BuildContext context, WidgetRef ref) async {
-    final success = await ref.read(userLocationProvider.notifier).requestPermission();
+    final result = await ref.read(userLocationProvider.notifier).requestPermission();
     if (context.mounted) {
-      if (success) {
+      if (result == LocationRequestResult.granted) {
         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(
-            content: Text('Location access granted successfully!'),
+          SnackBar(
+            content: const Text('Location access granted successfully!'),
             behavior: SnackBarBehavior.floating,
             backgroundColor: AppColors.success,
+          ),
+        );
+        onAllowAccess?.call();
+      } else if (result == LocationRequestResult.settingsOpened) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Please enable location services/permissions in Settings and try again.'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.warning,
           ),
         );
       } else {
@@ -30,7 +39,7 @@ class LocationPermissionScreen extends ConsumerWidget {
         ref.read(userLocationProvider.notifier).setMockLocation();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Permission denied or service disabled. Using fallback location.'),
+            content: const Text('Permission denied. Using fallback location.'),
             behavior: SnackBarBehavior.floating,
             backgroundColor: AppColors.warning,
             action: SnackBarAction(
@@ -40,8 +49,8 @@ class LocationPermissionScreen extends ConsumerWidget {
             ),
           ),
         );
+        onAllowAccess?.call();
       }
-      onAllowAccess?.call();
     }
   }
 

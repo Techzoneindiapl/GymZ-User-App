@@ -20,16 +20,21 @@ final sortByProvider = StateProvider<String>((ref) => 'distance');
 /// Provider holding the maximum distance range in km.
 final maxDistanceProvider = StateProvider<double>((ref) => 10.0);
 
+/// Provider holding the selected gender filter ('Male', 'Female', 'Unisex', or null).
+final selectedGenderProvider = StateProvider<String?>((ref) => null);
+
 /// FutureProvider that fetches the list of gyms from the backend API.
 /// It re-runs whenever search query or category filter changes.
 final gymsListProvider = FutureProvider<List<GymModel>>((ref) async {
   final category = ref.watch(selectedCategoryProvider);
   final search = ref.watch(gymSearchQueryProvider);
+  final gender = ref.watch(selectedGenderProvider);
   final repository = ref.watch(gymRepositoryProvider);
 
   return await repository.fetchGyms(
     category: category,
     search: search,
+    gender: gender,
   );
 });
 
@@ -53,6 +58,7 @@ final filteredGymsProvider = Provider<AsyncValue<List<GymModel>>>((ref) {
   final gymsAsync = ref.watch(gymsListProvider);
   final userLocation = ref.watch(userLocationProvider);
   final tiers = ref.watch(selectedTiersProvider);
+  final gender = ref.watch(selectedGenderProvider);
   final sortBy = ref.watch(sortByProvider);
   final maxDistance = ref.watch(maxDistanceProvider);
 
@@ -78,6 +84,11 @@ final filteredGymsProvider = Provider<AsyncValue<List<GymModel>>>((ref) {
     // 1. Filter by membership tier.
     if (tiers.isNotEmpty) {
       gyms = gyms.where((gym) => tiers.contains(gym.tier)).toList();
+    }
+
+    // 1b. Filter by gender.
+    if (gender != null && gender.isNotEmpty) {
+      gyms = gyms.where((gym) => gym.gender.toLowerCase() == gender.toLowerCase() || gym.gender.toLowerCase() == 'unisex').toList();
     }
 
     // 2. Filter by distance range.

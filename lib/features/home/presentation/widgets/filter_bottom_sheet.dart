@@ -18,8 +18,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   late List<String> _tempTiers;
   late String _tempSortBy;
   late double _tempMaxDistance;
+  String? _tempGender;
 
   final _availableTiers = const ['Platinum', 'Diamond', 'Gold', 'Silver'];
+  final _availableGenders = const ['Male', 'Female', 'Unisex'];
 
   @override
   void initState() {
@@ -27,6 +29,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     _tempTiers = List.from(ref.read(selectedTiersProvider));
     _tempSortBy = ref.read(sortByProvider);
     _tempMaxDistance = ref.read(maxDistanceProvider);
+    _tempGender = ref.read(selectedGenderProvider);
   }
 
   void _toggleTier(String tier) {
@@ -43,6 +46,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     ref.read(selectedTiersProvider.notifier).state = _tempTiers;
     ref.read(sortByProvider.notifier).state = _tempSortBy;
     ref.read(maxDistanceProvider.notifier).state = _tempMaxDistance;
+    ref.read(selectedGenderProvider.notifier).state = _tempGender;
     Navigator.pop(context);
   }
 
@@ -51,6 +55,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
       _tempTiers = [];
       _tempSortBy = 'distance';
       _tempMaxDistance = 10.0;
+      _tempGender = null;
     });
   }
 
@@ -112,6 +117,38 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                   side: BorderSide(color: isSelected ? AppColors.primary : AppColors.surfaceCardBorder),
                 ),
                 onSelected: (_) => _toggleTier(tier),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+
+          // 1b. Gender filter
+          Text('GENDER ACCESSIBILITY', style: AppTextStyles.label),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: _availableGenders.map((gender) {
+              final isSelected = _tempGender == gender;
+              return FilterChip(
+                showCheckmark: false,
+                label: Text(gender, style: AppTextStyles.caption.copyWith(color: isSelected ? Colors.white : AppColors.textPrimary)),
+                selected: isSelected,
+                selectedColor: AppColors.primary,
+                backgroundColor: AppColors.surfaceCard,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  side: BorderSide(color: isSelected ? AppColors.primary : AppColors.surfaceCardBorder),
+                ),
+                onSelected: (_) {
+                  setState(() {
+                    if (isSelected) {
+                      _tempGender = null;
+                    } else {
+                      _tempGender = gender;
+                    }
+                  });
+                },
               );
             }).toList(),
           ),

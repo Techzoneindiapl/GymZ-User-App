@@ -16,6 +16,12 @@ class UserLocation {
   bool get hasCoordinates => latitude != null && longitude != null;
 }
 
+enum LocationRequestResult {
+  granted,
+  denied,
+  settingsOpened,
+}
+
 class LocationNotifier extends StateNotifier<UserLocation> {
   LocationNotifier() : super(const UserLocation(isPermissionGranted: false)) {
     checkPermission();
@@ -41,13 +47,14 @@ class LocationNotifier extends StateNotifier<UserLocation> {
   }
 
   /// Request permissions and get current position.
-  Future<bool> requestPermission() async {
+  Future<LocationRequestResult> requestPermission() async {
     try {
       // Check service enablement
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
+        await Geolocator.openLocationSettings();
         state = const UserLocation(isPermissionGranted: false);
-        return false;
+        return LocationRequestResult.settingsOpened;
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
@@ -55,13 +62,14 @@ class LocationNotifier extends StateNotifier<UserLocation> {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
           state = const UserLocation(isPermissionGranted: false);
-          return false;
+          return LocationRequestResult.denied;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
+        await Geolocator.openAppSettings();
         state = const UserLocation(isPermissionGranted: false);
-        return false;
+        return LocationRequestResult.settingsOpened;
       }
 
       final position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.medium);
@@ -70,10 +78,10 @@ class LocationNotifier extends StateNotifier<UserLocation> {
         longitude: position.longitude,
         isPermissionGranted: true,
       );
-      return true;
+      return LocationRequestResult.granted;
     } catch (_) {
       state = const UserLocation(isPermissionGranted: false);
-      return false;
+      return LocationRequestResult.denied;
     }
   }
 
