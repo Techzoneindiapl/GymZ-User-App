@@ -92,6 +92,9 @@ class _UserShellScreenState extends ConsumerState<UserShellScreen> {
               );
             },
             onPassTap: () => _onTabTapped(2),
+            onNotificationTap: () {
+              context.pushNamed(RouteNames.notifications);
+            },
           ),
           ExploreScreen(
             onGymTap: (gym) {

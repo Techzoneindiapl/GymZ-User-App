@@ -7,7 +7,10 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gymz_user/features/auth/application/auth_provider.dart';
 import 'package:gymz_user/features/gym_detail/domain/booking_model.dart';
+import 'package:gymz_user/features/home/data/repositories/gym_repository.dart';
+import 'package:gymz_user/features/home/domain/gym_model.dart';
 import 'package:gymz_user/features/pass/application/booking_history_provider.dart';
+import 'package:gymz_user/features/pass/domain/review_model.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -162,41 +165,11 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
     }
   }
 
-  // Stores user-submitted ratings locally: key = bookingId, value = {'rating': double, 'comment': String}
+  // Stores user-submitted ratings locally: key = gymId, value = {'rating': double, 'comment': String}
   final Map<String, Map<String, dynamic>> _submittedReviews = {};
+  String _selectedBookingFilter = 'All';
 
-  final List<BookingModel> _fallbackCompletedBookings = [
-    BookingModel(
-      id: 'c1',
-      customerId: 'u1',
-      gymId: 'g1',
-      gymName: 'Iron Forge Studio',
-      gymAddress: '12, Linking Road, Bandra West, Mumbai',
-      galleryPhotos: const [],
-      bookingDate: '2026-07-18T10:00:00Z',
-      timeSlot: '08:00 AM - 09:00 AM',
-      price: 249.0,
-      status: 'completed',
-      bookingId: 'BK-82910',
-      createdAt: DateTime.now().subtract(const Duration(days: 4)),
-    ),
-    BookingModel(
-      id: 'c2',
-      customerId: 'u1',
-      gymId: 'g2',
-      gymName: 'Lotus Yoga Sanctuary',
-      gymAddress: '7, Hill Road, Bandra West, Mumbai',
-      galleryPhotos: const [],
-      bookingDate: '2026-07-20T10:00:00Z',
-      timeSlot: '06:00 PM - 07:00 PM',
-      price: 199.0,
-      status: 'completed',
-      bookingId: 'BK-10398',
-      createdAt: DateTime.now().subtract(const Duration(days: 2)),
-    ),
-  ];
-
-  void _openRatingBottomSheet(BookingModel booking) {
+  void _openRatingBottomSheet(GymModel gym) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -207,17 +180,65 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
             bottom: MediaQuery.of(context).viewInsets.bottom,
           ),
           child: _RatingBottomSheet(
-            booking: booking,
+            gym: gym,
             onSubmit: (rating, comment) {
               setState(() {
-                _submittedReviews[booking.bookingId] = {
+                _submittedReviews[gym.id] = {
                   'rating': rating,
                   'comment': comment,
                 };
               });
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Thank you! Review for ${booking.gymName} submitted.'),
+                  content: Text('Thank you! Review for ${gym.name} submitted.'),
+                  backgroundColor: AppColors.success,
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openEditRatingBottomSheet(ReviewModel review) {
+    final gym = GymModel(
+      id: review.gymId,
+      name: review.gymName,
+      category: '',
+      tier: review.gymTier,
+      distanceKm: 0.0,
+      openingTime: '',
+      closingTime: '',
+      pricePerSession: 0,
+      rating: review.rating,
+      imageUrl: review.gymImageUrl,
+      facilities: const [],
+      usageInstructions: const [],
+      address: '',
+      description: '',
+      latitude: 0.0,
+      longitude: 0.0,
+    );
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => SingleChildScrollView(
+        child: Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: _RatingBottomSheet(
+            gym: gym,
+            initialRating: review.rating,
+            initialComment: review.comment,
+            onSubmit: (rating, comment) {
+              ref.refresh(myReviewsProvider);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Review for ${review.gymName} updated successfully.'),
                   backgroundColor: AppColors.success,
                 ),
               );
@@ -244,9 +265,7 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
         ),
       ),
       data: (bookings) {
-        final bookedPasses = bookings.where((b) => b.status.toLowerCase() == 'booked').toList();
-
-        if (bookedPasses.isEmpty) {
+        if (bookings.isEmpty) {
           return RefreshIndicator(
             onRefresh: () => ref.read(bookingHistoryProvider.notifier).refreshHistory(),
             child: SingleChildScrollView(
@@ -257,11 +276,29 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
           );
         }
 
-        final latestBooking = bookedPasses.first;
-        final upcomingBookings = bookedPasses.sublist(1);
+        // Find the latest active booking to display the card at the top
+        final activeBookings = bookings.where((b) => b.status.toLowerCase() == 'booked').toList();
+        final latestBooking = activeBookings.isNotEmpty ? activeBookings.first : null;
 
-        final parsedDate = DateTime.tryParse(latestBooking.bookingDate) ?? DateTime.now();
-        final formattedDate = DateFormat('dd MMM yyyy').format(parsedDate);
+        // Show all other bookings below in the list
+        final listBookings = bookings.where((b) => b != latestBooking).toList();
+
+        // Filter the listBookings based on the selected chip
+        final filteredListBookings = listBookings.where((b) {
+          final status = b.status.toLowerCase();
+          final parsedDate = DateTime.tryParse(b.bookingDate) ?? DateTime.now();
+          
+          if (_selectedBookingFilter == 'Active') {
+            return status == 'booked';
+          } else if (_selectedBookingFilter == 'Used') {
+            return status == 'completed' || status == 'attended';
+          } else if (_selectedBookingFilter == 'Upcoming') {
+            final now = DateTime.now();
+            final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
+            return status == 'booked' && parsedDate.isAfter(todayEnd);
+          }
+          return true; // 'All'
+        }).toList();
 
         return RefreshIndicator(
           onRefresh: () => ref.read(bookingHistoryProvider.notifier).refreshHistory(),
@@ -271,82 +308,181 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                RepaintBoundary(
-                  key: _repaintKey,
-                  child: _ActivePassCard(
-                    memberName: userName,
-                    gymName: latestBooking.gymName,
-                    passId: latestBooking.bookingId,
-                    dateLabel: formattedDate,
-                    time: latestBooking.timeSlot,
-                    tier: 'Platinum',
-                    userId: userId,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                Row(
-                  children: [
-                    Expanded(
-                      child: PrimaryButton(
-                        label: _isDownloading ? 'Downloading...' : 'Download',
-                        leadingIcon: _isDownloading ? null : Icons.download_outlined,
-                        onPressed: _isDownloading ? null : () => _downloadPass(latestBooking),
-                      ),
+                if (latestBooking == null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: AppColors.primary.withOpacity(0.2)),
                     ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Material(
-                        color: AppColors.surfaceCardSolid,
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          onTap: _isSharing ? null : () => _sharePass(latestBooking),
-                          child: Container(
-                            height: 56,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(AppRadius.pill),
-                              border: Border.all(color: AppColors.surfaceCardBorder),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, size: 16, color: AppColors.primary),
+                        const SizedBox(width: AppSpacing.xs),
+                        Expanded(
+                          child: Text(
+                            'Use your digital pass for past/unused booking',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _isSharing
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
-                                      )
-                                    : Icon(Icons.share_outlined, size: 18, color: AppColors.textPrimary),
-                                const SizedBox(width: AppSpacing.sm),
-                                Text(
-                                  _isSharing ? 'Sharing...' : 'Share',
-                                  style: AppTextStyles.buttonLabel,
-                                ),
-                              ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                ],
+                if (latestBooking != null) ...[
+                  RepaintBoundary(
+                    key: _repaintKey,
+                    child: _ActivePassCard(
+                      memberName: userName,
+                      gymName: latestBooking.gymName,
+                      passId: latestBooking.bookingId,
+                      dateLabel: DateFormat('dd MMM yyyy').format(DateTime.tryParse(latestBooking.bookingDate) ?? DateTime.now()),
+                      time: latestBooking.timeSlot,
+                      tier: 'Platinum',
+                      userId: userId,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: PrimaryButton(
+                          label: _isDownloading ? 'Downloading...' : 'Download',
+                          leadingIcon: _isDownloading ? null : Icons.download_outlined,
+                          onPressed: _isDownloading ? null : () => _downloadPass(latestBooking),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Material(
+                          color: AppColors.surfaceCardSolid,
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                            onTap: _isSharing ? null : () => _sharePass(latestBooking),
+                            child: Container(
+                              height: 56,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(AppRadius.pill),
+                                border: Border.all(color: AppColors.surfaceCardBorder),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  _isSharing
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        )
+                                      : Icon(Icons.share_outlined, size: 18, color: AppColors.textPrimary),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Text(
+                                    _isSharing ? 'Sharing...' : 'Share',
+                                    style: AppTextStyles.buttonLabel,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                if (upcomingBookings.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.xxl),
-                  Text('Upcoming Passes', style: AppTextStyles.sectionTitle),
-                  const SizedBox(height: AppSpacing.md),
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: upcomingBookings.length,
-                    itemBuilder: (context, index) {
-                      final upcoming = upcomingBookings[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                        child: _UpcomingPassItem(booking: upcoming),
-                      );
-                    },
+                    ],
                   ),
+                  const SizedBox(height: AppSpacing.md),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, size: 16, color: AppColors.primary),
+                        const SizedBox(width: AppSpacing.xs),
+                        Expanded(
+                          child: Text(
+                            'Use your digital pass for past/unused bookings',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                if (listBookings.isNotEmpty || _selectedBookingFilter != 'All') ...[
+                  const SizedBox(height: AppSpacing.xxl),
+                  Text('My Bookings', style: AppTextStyles.sectionTitle),
+                  const SizedBox(height: AppSpacing.md),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: ['All', 'Active', 'Used', 'Upcoming'].map((filter) {
+                        final isSelected = _selectedBookingFilter == filter;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text(filter),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              if (selected) {
+                                setState(() {
+                                  _selectedBookingFilter = filter;
+                                });
+                              }
+                            },
+                            selectedColor: AppColors.primary.withOpacity(0.15),
+                            labelStyle: AppTextStyles.bodySmall.copyWith(
+                              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            ),
+                            backgroundColor: AppColors.surfaceCard,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              side: BorderSide(
+                                color: isSelected ? AppColors.primary : AppColors.surfaceCardBorder,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  filteredListBookings.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                          child: Center(
+                            child: Text(
+                              'No bookings found.',
+                              style: AppTextStyles.bodySmall.copyWith(fontStyle: FontStyle.italic),
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: filteredListBookings.length,
+                          itemBuilder: (context, index) {
+                            final booking = filteredListBookings[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                              child: _UpcomingPassItem(booking: booking),
+                            );
+                          },
+                        ),
                 ],
                 const SizedBox(height: AppSpacing.xxl),
               ],
@@ -357,8 +493,8 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
     );
   }
 
-  Widget _buildRateGymsTab(AsyncValue<List<BookingModel>> bookingsState) {
-    return bookingsState.when(
+  Widget _buildRateGymsTab(AsyncValue<List<GymModel>> pendingReviewsAsync) {
+    return pendingReviewsAsync.when(
       loading: () => const ShimmerLoading(
         child: Padding(
           padding: EdgeInsets.all(AppSpacing.xl),
@@ -369,33 +505,130 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: Text(
-            'Failed to load history: $error',
+            'Failed to load pending reviews: $error',
             style: AppTextStyles.body.copyWith(color: AppColors.danger),
             textAlign: TextAlign.center,
           ),
         ),
       ),
-      data: (bookings) {
-        final completedBookings = bookings
-            .where((b) => b.status.toLowerCase() == 'completed' || b.status.toLowerCase() == 'attended')
-            .toList();
-
-        final displayList = completedBookings.isNotEmpty ? completedBookings : _fallbackCompletedBookings;
+      data: (gyms) {
+        if (gyms.isEmpty) {
+          return RefreshIndicator(
+            onRefresh: () => ref.refresh(pendingReviewsProvider.future),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.xxl),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.rate_review_outlined, size: 64, color: AppColors.textSecondary.withOpacity(0.5)),
+                      const SizedBox(height: AppSpacing.md),
+                      Text(
+                        'No Pending Reviews',
+                        style: AppTextStyles.sectionTitle.copyWith(color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'All your workout sessions are rated!',
+                        style: AppTextStyles.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
 
         return RefreshIndicator(
-          onRefresh: () => ref.read(bookingHistoryProvider.notifier).refreshHistory(),
+          onRefresh: () => ref.refresh(pendingReviewsProvider.future),
           child: ListView.builder(
             padding: const EdgeInsets.all(AppSpacing.xl),
             physics: const AlwaysScrollableScrollPhysics(),
-            itemCount: displayList.length,
+            itemCount: gyms.length,
             itemBuilder: (context, index) {
-              final booking = displayList[index];
+              final gym = gyms[index];
               return Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                child: _CompletedPassItem(
-                  booking: booking,
-                  submittedReview: _submittedReviews[booking.bookingId],
-                  onRateTap: () => _openRatingBottomSheet(booking),
+                child: _CompletedGymItem(
+                  gym: gym,
+                  submittedReview: _submittedReviews[gym.id],
+                  onRateTap: () => _openRatingBottomSheet(gym),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMyReviewsTab(AsyncValue<List<ReviewModel>> myReviewsAsync) {
+    return myReviewsAsync.when(
+      loading: () => const ShimmerLoading(
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.xl),
+          child: _UpcomingPassSkeleton(),
+        ),
+      ),
+      error: (error, stack) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Text(
+            'Failed to load reviews: $error',
+            style: AppTextStyles.body.copyWith(color: AppColors.danger),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+      data: (reviews) {
+        if (reviews.isEmpty) {
+          return RefreshIndicator(
+            onRefresh: () => ref.refresh(myReviewsProvider.future),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.xxl),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.rate_review_outlined, size: 64, color: AppColors.textSecondary.withOpacity(0.5)),
+                      const SizedBox(height: AppSpacing.md),
+                      Text(
+                        'No Reviews Yet',
+                        style: AppTextStyles.sectionTitle.copyWith(color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Share your experience about gyms you have visited!',
+                        style: AppTextStyles.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: () => ref.refresh(myReviewsProvider.future),
+          child: ListView.builder(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            physics: const AlwaysScrollableScrollPhysics(),
+            itemCount: reviews.length,
+            itemBuilder: (context, index) {
+              final review = reviews[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: _MyReviewItem(
+                  review: review,
+                  onEditTap: () => _openEditRatingBottomSheet(review),
                 ),
               );
             },
@@ -413,7 +646,7 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
     final userId = user?.memberId ?? 'GZ-GUEST';
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: GradientScaffold(
         body: SafeArea(
           child: Column(
@@ -432,15 +665,17 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
                 labelStyle: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700),
                 unselectedLabelStyle: AppTextStyles.body,
                 tabs: const [
-                  Tab(text: 'Upcoming Passes'),
+                  Tab(text: 'My Bookings'),
                   Tab(text: 'Rate Gyms'),
+                  Tab(text: 'My Reviews'),
                 ],
               ),
               Expanded(
                 child: TabBarView(
                   children: [
                     _buildUpcomingTab(bookingsState, userName, userId),
-                    _buildRateGymsTab(bookingsState),
+                    _buildRateGymsTab(ref.watch(pendingReviewsProvider)),
+                    _buildMyReviewsTab(ref.watch(myReviewsProvider)),
                   ],
                 ),
               ),
@@ -504,23 +739,46 @@ class _ActivePassCard extends StatelessWidget {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Image.asset(
                 'assets/logo/gymz-logo.png',
                 width: 90,
                 fit: BoxFit.contain,
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _tierColor.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: _tierColor),
-                ),
-                child: Text(
-                  tier.toUpperCase(),
-                  style: AppTextStyles.caption.copyWith(color: _tierColor, fontWeight: FontWeight.w700),
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _tierColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: _tierColor),
+                    ),
+                    child: Text(
+                      tier.toUpperCase(),
+                      style: AppTextStyles.caption.copyWith(color: _tierColor, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+                    ),
+                    child: Text(
+                      'Recently Booked',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 9,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -632,9 +890,24 @@ class _UpcomingPassItem extends StatelessWidget {
     final parsedDate = DateTime.tryParse(booking.bookingDate) ?? DateTime.now();
     final dayStr = parsedDate.day.toString();
     final monthStr = DateFormat('MMM').format(parsedDate);
-    final isToday = parsedDate.year == DateTime.now().year &&
-        parsedDate.month == DateTime.now().month &&
-        parsedDate.day == DateTime.now().day;
+
+    final status = booking.status.toLowerCase();
+    final bool isActive = status == 'booked';
+    final bool isCompleted = status == 'completed' || status == 'attended';
+
+    Color badgeColor;
+    String badgeText;
+
+    if (isActive) {
+      badgeColor = AppColors.success;
+      badgeText = 'Active';
+    } else if (isCompleted) {
+      badgeColor = AppColors.textSecondary;
+      badgeText = 'Used';
+    } else {
+      badgeColor = AppColors.primary;
+      badgeText = booking.status.toUpperCase();
+    }
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -668,19 +941,23 @@ class _UpcomingPassItem extends StatelessWidget {
               ],
             ),
           ),
-          if (isToday)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.success.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                border: Border.all(color: AppColors.success),
-              ),
-              child: Text(
-                'TODAY',
-                style: AppTextStyles.caption.copyWith(color: AppColors.success, fontWeight: FontWeight.w700),
+          const SizedBox(width: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: badgeColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              border: Border.all(color: badgeColor.withOpacity(0.5)),
+            ),
+            child: Text(
+              badgeText,
+              style: AppTextStyles.caption.copyWith(
+                color: badgeColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 10,
               ),
             ),
+          ),
         ],
       ),
     );
@@ -895,25 +1172,19 @@ class _UpcomingPassSkeleton extends StatelessWidget {
       ),
     );
   }
-}
-
-class _CompletedPassItem extends StatelessWidget {
-  const _CompletedPassItem({
-    required this.booking,
+}class _CompletedGymItem extends StatelessWidget {
+  const _CompletedGymItem({
+    required this.gym,
     required this.submittedReview,
     required this.onRateTap,
   });
 
-  final BookingModel booking;
+  final GymModel gym;
   final Map<String, dynamic>? submittedReview;
   final VoidCallback onRateTap;
 
   @override
   Widget build(BuildContext context) {
-    final parsedDate = DateTime.tryParse(booking.bookingDate) ?? DateTime.now();
-    final dayStr = parsedDate.day.toString();
-    final monthStr = DateFormat('MMM').format(parsedDate);
-
     final isRated = submittedReview != null;
     final rating = isRated ? submittedReview!['rating'] as double : 0.0;
 
@@ -929,14 +1200,15 @@ class _CompletedPassItem extends StatelessWidget {
           Container(
             width: 44,
             height: 44,
-            alignment: Alignment.center,
             decoration: BoxDecoration(
               color: AppColors.iconCircleBg,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: Text(
-              dayStr,
-              style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              child: gym.imageUrl.isNotEmpty
+                  ? Image.network(gym.imageUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.fitness_center))
+                  : const Icon(Icons.fitness_center),
             ),
           ),
           const SizedBox(width: AppSpacing.lg),
@@ -944,8 +1216,8 @@ class _CompletedPassItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(booking.gymName, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700)),
-                Text('$dayStr $monthStr · ${booking.timeSlot} · Completed', style: AppTextStyles.bodySmall),
+                Text(gym.name, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700)),
+                Text('${gym.tier} · ${gym.category}', style: AppTextStyles.bodySmall),
                 if (isRated) ...[
                   const SizedBox(height: AppSpacing.xs),
                   Row(
@@ -998,7 +1270,7 @@ class _CompletedPassItem extends StatelessWidget {
                   builder: (context) => AlertDialog(
                     backgroundColor: AppColors.surfaceCardSolid,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xl)),
-                    title: Text(booking.gymName, style: AppTextStyles.sectionTitle),
+                    title: Text(gym.name, style: AppTextStyles.sectionTitle),
                     content: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1041,23 +1313,34 @@ class _CompletedPassItem extends StatelessWidget {
   }
 }
 
-class _RatingBottomSheet extends StatefulWidget {
+class _RatingBottomSheet extends ConsumerStatefulWidget {
   const _RatingBottomSheet({
-    required this.booking,
+    required this.gym,
     required this.onSubmit,
+    this.initialRating,
+    this.initialComment,
   });
 
-  final BookingModel booking;
+  final GymModel gym;
   final Function(double rating, String comment) onSubmit;
+  final double? initialRating;
+  final String? initialComment;
 
   @override
-  State<_RatingBottomSheet> createState() => _RatingBottomSheetState();
+  ConsumerState<_RatingBottomSheet> createState() => _RatingBottomSheetState();
 }
 
-class _RatingBottomSheetState extends State<_RatingBottomSheet> {
-  double _rating = 5;
-  final _commentController = TextEditingController();
+class _RatingBottomSheetState extends ConsumerState<_RatingBottomSheet> {
+  late double _rating;
+  late final TextEditingController _commentController;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _rating = widget.initialRating ?? 5.0;
+    _commentController = TextEditingController(text: widget.initialComment);
+  }
 
   @override
   void dispose() {
@@ -1096,7 +1379,7 @@ class _RatingBottomSheetState extends State<_RatingBottomSheet> {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            widget.booking.gymName,
+            widget.gym.name,
             style: AppTextStyles.body.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -1168,13 +1451,169 @@ class _RatingBottomSheetState extends State<_RatingBottomSheet> {
                 ? null
                 : () async {
                     setState(() => _isLoading = true);
-                    await Future<void>.delayed(const Duration(seconds: 1));
-                    widget.onSubmit(_rating, _commentController.text);
-                    if (mounted) {
-                      Navigator.pop(context);
+                    try {
+                      await ref.read(gymRepositoryProvider).submitReview(
+                        gymId: widget.gym.id,
+                        rating: _rating,
+                        comment: _commentController.text,
+                      );
+                      widget.onSubmit(_rating, _commentController.text);
+                      ref.refresh(myReviewsProvider);
+                      if (mounted) {
+                        Navigator.pop(context);
+                      }
+                    } catch (e) {
+                      setState(() => _isLoading = false);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Failed to submit review: $e'),
+                            backgroundColor: AppColors.danger,
+                          ),
+                        );
+                      }
                     }
                   },
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MyReviewItem extends StatelessWidget {
+  const _MyReviewItem({
+    required this.review,
+    required this.onEditTap,
+  });
+
+  final ReviewModel review;
+  final VoidCallback onEditTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final formattedDate = DateFormat('dd MMM yyyy').format(review.createdAt);
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceCard,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: AppColors.surfaceCardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.iconCircleBg,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  child: review.gymImageUrl.isNotEmpty
+                      ? Image.network(review.gymImageUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.fitness_center))
+                      : const Icon(Icons.fitness_center),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.lg),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(review.gymName, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700)),
+                    if (review.gymTier.isNotEmpty)
+                      Text(review.gymTier, style: AppTextStyles.bodySmall),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    formattedDate,
+                    style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 4),
+                  TextButton.icon(
+                    onPressed: onEditTap,
+                    icon: const Icon(Icons.edit_outlined, size: 14),
+                    label: Text(
+                      'Edit',
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: List.generate(5, (i) {
+              return Icon(
+                Icons.star,
+                size: 16,
+                color: i < review.rating.toInt() ? AppColors.starColor : AppColors.textSecondary.withOpacity(0.3),
+              );
+            }),
+          ),
+          if (review.comment.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              review.comment,
+              style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
+            ),
+          ],
+          if (review.vendorReply != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundBottom.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(color: AppColors.surfaceCardBorder.withOpacity(0.5)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.reply_outlined, size: 14, color: AppColors.primary),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Response from Gym Owner',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    review.vendorReply!,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

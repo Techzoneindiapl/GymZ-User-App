@@ -12,6 +12,7 @@ class RouteNames {
   static const String gymDetail = 'gymDetail';
   static const String myPass = 'myPass';
   static const String profile = 'profile';
+  static const String notifications = 'notifications';
 }
 
 class RoutePaths {
@@ -28,4 +29,5 @@ class RoutePaths {
   static const String gymDetail = '/gym/:id';
   static const String myPass = '/pass';
   static const String profile = '/profile';
+  static const String notifications = '/notifications';
 }

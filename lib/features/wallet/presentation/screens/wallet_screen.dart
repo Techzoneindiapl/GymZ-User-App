@@ -22,6 +22,7 @@ class WalletScreen extends ConsumerStatefulWidget {
 class _WalletScreenState extends ConsumerState<WalletScreen> {
   double _selectedRechargeAmount = 1000;
   String _selectedPaymentMethod = 'UPI';
+  String _selectedTxFilter = 'All';
 
   final List<double> _quickRecharges = [100, 500, 1000, 2000];
 
@@ -228,8 +229,54 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               // Transaction History
               Text('Transaction History', style: AppTextStyles.sectionTitle.copyWith(fontSize: 16)),
               const SizedBox(height: AppSpacing.md),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: ['All', 'Credits', 'Debits'].map((filter) {
+                    final isSelected = _selectedTxFilter == filter;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(filter),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() {
+                              _selectedTxFilter = filter;
+                            });
+                          }
+                        },
+                        selectedColor: AppColors.primary.withOpacity(0.15),
+                        labelStyle: AppTextStyles.bodySmall.copyWith(
+                          color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                        backgroundColor: AppColors.surfaceCard,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          side: BorderSide(
+                            color: isSelected ? AppColors.primary : AppColors.surfaceCardBorder,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
               walletState.when(
-                data: (walletData) => _buildTransactionList(walletData.transactions),
+                data: (walletData) {
+                  final filteredTxs = walletData.transactions.where((tx) {
+                    final isCredit = tx.type == 'credit';
+                    if (_selectedTxFilter == 'Credits') {
+                      return isCredit;
+                    } else if (_selectedTxFilter == 'Debits') {
+                      return !isCredit;
+                    }
+                    return true;
+                  }).toList();
+                  return _buildTransactionList(filteredTxs);
+                },
                 loading: () => const ShimmerLoading(
                   child: Column(
                     children: [
@@ -413,6 +460,9 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
 
   Widget _buildTransactionList(List<WalletTransaction> transactions) {
     if (transactions.isEmpty) {
+      final noTxMsg = _selectedTxFilter == 'All'
+          ? 'No transactions yet.'
+          : 'No ${_selectedTxFilter.toLowerCase()} transactions found.';
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
@@ -422,7 +472,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
             Icon(Icons.history_toggle_off, size: 48, color: AppColors.textMuted),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'No transactions yet.',
+              noTxMsg,
               style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
             ),
           ],
