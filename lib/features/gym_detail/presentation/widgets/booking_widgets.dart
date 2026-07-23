@@ -35,6 +35,7 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
   late DateTime _selectedDate;
   TimeOfDay? _selectedTime;
   bool _isCustomDate = false;
+  String? _timeErrorMessage;
 
   final List<String> _quickTimes = [
     '07:00 AM',
@@ -66,7 +67,50 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
       _selectedDate = today;
     }
 
-    _selectedTime = widget.initialTime ?? const TimeOfDay(hour: 9, minute: 0);
+    final initial = widget.initialTime ?? const TimeOfDay(hour: 9, minute: 0);
+    if (_isTimeInPast(initial)) {
+      TimeOfDay? firstAvailable;
+      for (final qt in _quickTimes) {
+        final parsed = _parseTimeString(qt);
+        if (!_isTimeInPast(parsed)) {
+          firstAvailable = parsed;
+          break;
+        }
+      }
+      _selectedTime = firstAvailable;
+    } else {
+      _selectedTime = initial;
+    }
+  }
+
+  bool _isTimeInPast(TimeOfDay time) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    
+    if (_isSameDay(_selectedDate, today)) {
+      final nowTime = TimeOfDay.fromDateTime(now);
+      if (time.hour < nowTime.hour) {
+        return true;
+      } else if (time.hour == nowTime.hour) {
+        return time.minute < nowTime.minute;
+      }
+    }
+    return false;
+  }
+
+  void _ensureValidTime() {
+    if (_selectedTime != null && _isTimeInPast(_selectedTime!)) {
+      TimeOfDay? firstAvailable;
+      for (final qt in _quickTimes) {
+        final parsed = _parseTimeString(qt);
+        if (!_isTimeInPast(parsed)) {
+          firstAvailable = parsed;
+          break;
+        }
+      }
+      _selectedTime = firstAvailable;
+    }
+    _timeErrorMessage = null;
   }
 
   bool _isSameDay(DateTime d1, DateTime d2) {
@@ -120,14 +164,27 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
         _selectedDate = picked;
         final tomorrow = today.add(const Duration(days: 1));
         _isCustomDate = !_isSameDay(picked, today) && !_isSameDay(picked, tomorrow);
+        if (_isSameDay(picked, today)) {
+          _ensureValidTime();
+        } else if (_selectedTime == null) {
+          _selectedTime = _parseTimeString(_quickTimes.first);
+        }
       });
     }
   }
 
   void _selectCustomTime() async {
+    final now = DateTime.now();
+    final nowTime = TimeOfDay.fromDateTime(now);
+    
+    TimeOfDay initial = _selectedTime ?? nowTime;
+    if (_isTimeInPast(initial)) {
+      initial = nowTime;
+    }
+
     final picked = await showTimePicker(
       context: context,
-      initialTime: _selectedTime ?? const TimeOfDay(hour: 9, minute: 0),
+      initialTime: initial,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -145,9 +202,25 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
     );
 
     if (picked != null) {
-      setState(() {
-        _selectedTime = picked;
-      });
+      if (_isTimeInPast(picked)) {
+        setState(() {
+          _timeErrorMessage = "Cannot select a booking time in the past!";
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text("Cannot select a booking time in the past!"),
+              backgroundColor: AppColors.danger,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else {
+        setState(() {
+          _selectedTime = picked;
+          _timeErrorMessage = null;
+        });
+      }
     }
   }
 
@@ -212,6 +285,7 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                   setState(() {
                     _selectedDate = today;
                     _isCustomDate = false;
+                    _ensureValidTime();
                   });
                 },
               ),
@@ -224,6 +298,9 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                   setState(() {
                     _selectedDate = tomorrow;
                     _isCustomDate = false;
+                    if (_selectedTime == null) {
+                      _selectedTime = _parseTimeString(_quickTimes.first);
+                    }
                   });
                 },
               ),
@@ -251,12 +328,15 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
                 final isSelected = _selectedTime != null &&
                     _selectedTime!.hour == quickTime.hour &&
                     _selectedTime!.minute == quickTime.minute;
+                final isEnabled = !_isTimeInPast(quickTime);
                 return _buildTimeChip(
                   label: timeStr,
                   isSelected: isSelected,
+                  isEnabled: isEnabled,
                   onTap: () {
                     setState(() {
                       _selectedTime = quickTime;
+                      _timeErrorMessage = null;
                     });
                   },
                 );
@@ -271,6 +351,13 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
               ),
             ],
           ),
+          if (_timeErrorMessage != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              _timeErrorMessage!,
+              style: AppTextStyles.caption.copyWith(color: AppColors.danger),
+            ),
+          ],
           const SizedBox(height: AppSpacing.xxl),
 
           // Pricing Summary
@@ -398,16 +485,27 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
     required bool isSelected,
     required VoidCallback onTap,
     IconData? icon,
+    bool isEnabled = true,
   }) {
+    final textColor = isSelected
+        ? AppColors.textOnAccent
+        : (isEnabled ? AppColors.textPrimary : AppColors.textMuted.withOpacity(0.5));
+    final bgColor = isSelected 
+        ? AppColors.primary 
+        : (isEnabled ? AppColors.surfaceCard : AppColors.surfaceCardSolid.withOpacity(0.2));
+    final borderColor = isSelected 
+        ? AppColors.primary 
+        : (isEnabled ? AppColors.surfaceCardBorder : AppColors.surfaceCardBorder.withOpacity(0.3));
+
     return GestureDetector(
-      onTap: onTap,
+      onTap: isEnabled ? onTap : null,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.surfaceCard,
+          color: bgColor,
           borderRadius: BorderRadius.circular(AppRadius.pill),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.surfaceCardBorder,
+            color: borderColor,
             width: 1.5,
           ),
         ),
@@ -417,7 +515,7 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
             if (icon != null) ...[
               Icon(
                 icon,
-                color: isSelected ? AppColors.textOnAccent : AppColors.textPrimary,
+                color: textColor,
                 size: 16,
               ),
               const SizedBox(width: 6),
@@ -427,7 +525,8 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
               style: AppTextStyles.body.copyWith(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? AppColors.textOnAccent : AppColors.textPrimary,
+                color: textColor,
+                decoration: isEnabled ? null : TextDecoration.lineThrough,
               ),
             ),
           ],

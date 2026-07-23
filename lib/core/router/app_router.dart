@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/screens/auth_screen.dart';
 import '../../features/auth/presentation/screens/create_account_screen.dart';
 import '../../features/auth/presentation/screens/fitness_pass_screen.dart';
-import '../../features/auth/presentation/screens/mobile_login_screen.dart';
 import '../../features/auth/presentation/screens/otp_verification_screen.dart';
 import '../../features/gym_detail/presentation/screens/gym_detail_screen.dart';
 import '../../features/home/domain/gym_model.dart';
@@ -51,20 +50,10 @@ final GoRouter appRouter = GoRouter(
       pageBuilder: (context, state) => _slide(
         state: state,
         child: AuthScreen(
-          onMobileNumber: () => context.goNamed(RouteNames.mobileLogin),
           onGoogle: () {},
           onApple: () {},
           onGuest: () => context.goNamed(RouteNames.locationPermission),
-          onContinue: () => context.goNamed(RouteNames.mobileLogin),
         ),
-      ),
-    ),
-    GoRoute(
-      path: RoutePaths.mobileLogin,
-      name: RouteNames.mobileLogin,
-      pageBuilder: (context, state) => _slide(
-        state: state,
-        child: const MobileLoginScreen(),
       ),
     ),
     GoRoute(
