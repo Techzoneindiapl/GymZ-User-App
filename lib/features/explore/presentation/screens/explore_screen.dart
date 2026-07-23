@@ -11,6 +11,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../../../core/localization/translations.dart';
+import '../../../../core/localization/language_provider.dart';
 
 
 class ExploreScreen extends ConsumerStatefulWidget {
@@ -61,6 +63,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   Widget build(BuildContext context) {
     final filteredGymsAsync = ref.watch(filteredGymsProvider);
     final selectedCategory = ref.watch(selectedCategoryProvider);
+    final tr = ref.watch(translationProvider);
 
     return SafeArea(
       child: RefreshIndicator(
@@ -78,7 +81,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Explore', style: AppTextStyles.displayMedium),
+              Text(tr['explore'] ?? 'Explore', style: AppTextStyles.displayMedium),
               const SizedBox(height: AppSpacing.lg),
 
               // Search Bar
@@ -92,7 +95,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
               const SizedBox(height: AppSpacing.xl),
 
               // Categories Row
-              Text('Categories', style: AppTextStyles.sectionTitle),
+              Text(tr['categories'] ?? 'Categories', style: AppTextStyles.sectionTitle),
               const SizedBox(height: AppSpacing.md),
               SizedBox(
                 height: 90,
@@ -104,9 +107,27 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                   itemBuilder: (context, index) {
                     final category = kCategories[index];
                     final isSelected = selectedCategory == category;
+                    final String translatedCategory;
+                    switch (category) {
+                      case 'Gym':
+                        translatedCategory = tr['category_gym'] ?? 'Gym';
+                        break;
+                      case 'Yoga':
+                        translatedCategory = tr['category_yoga'] ?? 'Yoga';
+                        break;
+                      case 'Sports':
+                        translatedCategory = tr['category_sports'] ?? 'Sports';
+                        break;
+                      case 'Zumba':
+                        translatedCategory = tr['category_zumba'] ?? 'Zumba';
+                        break;
+                      default:
+                        translatedCategory = category;
+                    }
                     return CategoryChip(
-                      label: category,
+                      label: translatedCategory,
                       isSelected: isSelected,
+                      categoryName: category,
                       onTap: () {
                         final notifier = ref.read(
                           selectedCategoryProvider.notifier,
@@ -129,12 +150,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             filteredGyms.isEmpty
-                                ? 'Fitness Centers'
+                                ? (tr['fitness_centers'] ?? 'Fitness Centers')
                                 : 'Found ${filteredGyms.length} ${filteredGyms.length == 1 ? 'center' : 'centers'}',
                             style: AppTextStyles.sectionTitle,
                           ),
@@ -142,7 +163,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                             TextButton(
                               onPressed: _resetAllFilters,
                               child: Text(
-                                'Clear All',
+                                tr['clear_all'] ?? 'Clear All',
                                 style: AppTextStyles.bodySmall.copyWith(
                                   color: AppColors.primary,
                                   fontWeight: FontWeight.bold,
@@ -176,8 +197,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: AppSpacing.lg),
-                                Text(
-                                  'No fitness centers found',
+                                 Text(
+                                  tr['no_gyms_found'] ?? 'No fitness centers found',
                                   style: AppTextStyles.sectionTitle.copyWith(
                                     fontSize: 18,
                                   ),
@@ -199,7 +220,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                                 ElevatedButton.icon(
                                   onPressed: _resetAllFilters,
                                   icon: const Icon(Icons.refresh, size: 18),
-                                  label: const Text('Reset All Filters'),
+                                  label: Text(tr['reset_all'] ?? 'Reset All Filters'),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.primary,
                                     foregroundColor: Colors.white,

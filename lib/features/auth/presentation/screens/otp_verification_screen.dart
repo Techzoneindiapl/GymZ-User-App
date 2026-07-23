@@ -11,6 +11,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/gradient_scaffold.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../application/auth_provider.dart';
+import '../../../../core/localization/translations.dart';
 
 class OtpVerificationScreen extends ConsumerStatefulWidget {
   const OtpVerificationScreen({super.key});
@@ -116,6 +117,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
     final authState = ref.watch(authProvider);
     final isLoading = authState.status == AuthStatus.authenticating;
     final phone = authState.phone ?? '';
+    final tr = ref.watch(translationProvider);
 
     return GradientScaffold(
       body: Column(
@@ -131,7 +133,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                   style: IconButton.styleFrom(backgroundColor: AppColors.surfaceCard),
                 ),
                 const SizedBox(width: AppSpacing.md),
-                Text('Verify OTP', style: AppTextStyles.displayMedium),
+                Text(tr['otp_verify_title'] ?? 'Verify OTP', style: AppTextStyles.displayMedium),
               ],
             ),
           ),
@@ -144,7 +146,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                 children: [
                   const SizedBox(height: AppSpacing.xl),
                   Text(
-                    'We sent a 4-digit code to',
+                    tr['otp_verify_sub'] ?? 'We sent a 4-digit code to',
                     style: AppTextStyles.bodySmall,
                   ),
                   const SizedBox(height: AppSpacing.xs),
@@ -221,7 +223,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        _canResend ? "Didn't receive code? " : "Resend OTP in ",
+                        _canResend ? (tr['didnt_receive_code'] ?? "Didn't receive code? ") : (tr['resend_in'] ?? "Resend OTP in "),
                         style: AppTextStyles.bodySmall,
                       ),
                       if (!_canResend)
@@ -236,7 +238,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                         GestureDetector(
                           onTap: _handleResend,
                           child: Text(
-                            'Resend OTP',
+                            tr['resend_otp'] ?? 'Resend OTP',
                             style: AppTextStyles.bodySmall.copyWith(
                               color: AppColors.primary,
                               fontWeight: FontWeight.bold,
@@ -274,7 +276,7 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                   const SizedBox(height: AppSpacing.xxl),
                   
                   PrimaryButton(
-                    label: 'Verify & Continue',
+                    label: tr['verify_otp'] ?? 'Verify & Continue',
                     isEnabled: _isOtpComplete() && !isLoading,
                     isLoading: isLoading,
                     onPressed: _handleVerify,

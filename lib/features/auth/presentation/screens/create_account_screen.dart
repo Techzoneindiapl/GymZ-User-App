@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gymz_user/core/router/route_names.dart';
@@ -13,6 +14,8 @@ import '../../../../core/widgets/gradient_scaffold.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../screens/fitness_pass_screen.dart';
 import '../../application/auth_provider.dart';
+import '../../../../core/localization/translations.dart';
+import '../../../../core/localization/language_provider.dart';
 
 enum Gender { male, female, other }
 
@@ -166,6 +169,7 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
     final notifier = ref.read(createAccountProvider.notifier);
     final authState = ref.watch(authProvider);
     final isSubmitting = authState.status == AuthStatus.authenticating;
+    final tr = ref.watch(translationProvider);
 
     return GradientScaffold(
       body: Column(
@@ -181,7 +185,7 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
                   style: IconButton.styleFrom(backgroundColor: AppColors.surfaceCard),
                 ),
                 const SizedBox(width: AppSpacing.md),
-                Text('Create Account', style: AppTextStyles.displayMedium),
+                Text(tr['create_account_title'] ?? 'Create Account', style: AppTextStyles.displayMedium),
               ],
             ),
           ),
@@ -191,17 +195,17 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _FieldLabel('Full Name'),
-                  _InputField(hint: 'Muzammil Qureshi', onChanged: notifier.updateFullName),
+                  _FieldLabel(tr['label_name'] ?? 'Full Name'),
+                  _InputField(hint: tr['hint_name'] ?? 'Muzammil Qureshi', onChanged: notifier.updateFullName),
                   const SizedBox(height: AppSpacing.lg),
-                  _FieldLabel('Gender'),
+                  _FieldLabel(tr['label_gender'] ?? 'Gender'),
                   const SizedBox(height: AppSpacing.sm),
                   _GenderSelector(
                     selected: state.gender,
                     onChanged: notifier.updateGender,
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  _FieldLabel('Mobile Number'),
+                  _FieldLabel(tr['phone_number'] ?? 'Mobile Number'),
                   _InputField(
                     hint: '7400105833',
                     keyboardType: TextInputType.phone,
@@ -210,21 +214,21 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
                     enabled: false,
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  _FieldLabel('Email Address'),
+                  _FieldLabel(tr['label_email'] ?? 'Email Address'),
                   _InputField(
-                    hint: 'you@email.com',
+                    hint: tr['hint_email'] ?? 'you@email.com',
                     keyboardType: TextInputType.emailAddress,
                     onChanged: notifier.updateEmail,
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  _FieldLabel('Pincode'),
+                  _FieldLabel(tr['label_pincode'] ?? 'Pincode'),
                   _InputField(
-                    hint: '400050',
+                    hint: tr['hint_pincode'] ?? '400050',
                     keyboardType: TextInputType.number,
                     onChanged: notifier.updatePincode,
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  _FieldLabel('Upload Selfie'),
+                  _FieldLabel(tr['label_selfie'] ?? 'Upload Selfie'),
                   const SizedBox(height: AppSpacing.sm),
                   _SelfieUploader(
                     filePath: state.selfieFilePath,
@@ -241,7 +245,7 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
                   ],
                   const SizedBox(height: AppSpacing.xxl),
                   PrimaryButton(
-                    label: 'Generate My Fitness Pass',
+                    label: tr['submit_profile'] ?? 'Generate My Fitness Pass',
                     isEnabled: state.isValid && !isSubmitting,
                     isLoading: isSubmitting,
                     onPressed: _handleRegisterSubmit,
@@ -291,6 +295,12 @@ class _InputField extends StatelessWidget {
       enabled: enabled,
       onChanged: onChanged,
       keyboardType: keyboardType,
+      inputFormatters: keyboardType == TextInputType.phone || keyboardType == TextInputType.number
+          ? [
+              LengthLimitingTextInputFormatter(keyboardType == TextInputType.phone ? 10 : 6),
+              FilteringTextInputFormatter.digitsOnly,
+            ]
+          : null,
       style: AppTextStyles.body.copyWith(
         color: enabled ? AppColors.textPrimary : AppColors.textMuted,
       ),
@@ -310,17 +320,29 @@ class _InputField extends StatelessWidget {
   }
 }
 
-class _GenderSelector extends StatelessWidget {
+class _GenderSelector extends ConsumerWidget {
   const _GenderSelector({required this.selected, required this.onChanged});
   final Gender selected;
   final ValueChanged<Gender> onChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tr = ref.watch(translationProvider);
     return Row(
       children: Gender.values.map((g) {
         final isSelected = g == selected;
-        final label = g.name[0].toUpperCase() + g.name.substring(1);
+        final String label;
+        switch (g) {
+          case Gender.male:
+            label = tr['male'] ?? 'Male';
+            break;
+          case Gender.female:
+            label = tr['female'] ?? 'Female';
+            break;
+          case Gender.other:
+            label = tr['other'] ?? 'Other';
+            break;
+        }
         return Padding(
           padding: const EdgeInsets.only(right: AppSpacing.md),
           child: Material(

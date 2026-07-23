@@ -10,6 +10,8 @@ import '../../../../core/widgets/user_shell_screen.dart';
 import '../../application/wallet_provider.dart';
 import '../../domain/wallet_model.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../../../core/localization/translations.dart';
+import '../../../../core/localization/language_provider.dart';
 
 
 class WalletScreen extends ConsumerStatefulWidget {
@@ -85,6 +87,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
   @override
   Widget build(BuildContext context) {
     final walletState = ref.watch(walletProvider);
+    final tr = ref.watch(translationProvider);
 
     return GradientScaffold(
       body: RefreshIndicator(
@@ -113,7 +116,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                     style: IconButton.styleFrom(backgroundColor: AppColors.surfaceCard),
                   ),
                   const SizedBox(width: AppSpacing.md),
-                  Text('Wallet', style: AppTextStyles.displayMedium),
+                  Text(tr['wallet'] ?? 'Wallet', style: AppTextStyles.displayMedium),
                 ],
               ),
               const SizedBox(height: AppSpacing.xl),
@@ -127,7 +130,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               const SizedBox(height: AppSpacing.xl),
 
               // Quick Recharge
-              Text('Quick Recharge', style: AppTextStyles.sectionTitle.copyWith(fontSize: 16)),
+              Text(tr['quick_recharge'] ?? 'Quick Recharge', style: AppTextStyles.sectionTitle.copyWith(fontSize: 16)),
               const SizedBox(height: AppSpacing.md),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -169,7 +172,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               const SizedBox(height: AppSpacing.xl),
 
               // Payment Methods
-              Text('Payment Methods', style: AppTextStyles.sectionTitle.copyWith(fontSize: 16)),
+              Text(tr['payment_methods'] ?? 'Payment Methods', style: AppTextStyles.sectionTitle.copyWith(fontSize: 16)),
               const SizedBox(height: AppSpacing.md),
               GridView.builder(
                 shrinkWrap: true,
@@ -229,17 +232,31 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               const SizedBox(height: AppSpacing.xxl),
 
               // Transaction History
-              Text('Transaction History', style: AppTextStyles.sectionTitle.copyWith(fontSize: 16)),
+              Text(tr['transaction_history'] ?? 'Transaction History', style: AppTextStyles.sectionTitle.copyWith(fontSize: 16)),
               const SizedBox(height: AppSpacing.md),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: ['All', 'Credits', 'Debits'].map((filter) {
                     final isSelected = _selectedTxFilter == filter;
+                    final String translatedFilter;
+                    switch (filter) {
+                      case 'All':
+                        translatedFilter = tr['all'] ?? 'All';
+                        break;
+                      case 'Credits':
+                        translatedFilter = tr['credits'] ?? 'Credits';
+                        break;
+                      case 'Debits':
+                        translatedFilter = tr['debits'] ?? 'Debits';
+                        break;
+                      default:
+                        translatedFilter = filter;
+                    }
                     return Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: ChoiceChip(
-                        label: Text(filter),
+                        label: Text(translatedFilter),
                         selected: isSelected,
                         onSelected: (selected) {
                           if (selected) {
@@ -293,7 +310,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 24.0),
                     child: Text(
-                      'Failed to load transactions. Pull to refresh.',
+                      tr['failed_load_txs'] ?? 'Failed to load transactions. Pull to refresh.',
                       style: AppTextStyles.bodySmall,
                     ),
                   ),
@@ -308,6 +325,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
   }
 
   Widget _buildBalanceCard(double balance) {
+    final tr = ref.watch(translationProvider);
     final currencyFormatter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
     final balanceText = currencyFormatter.format(balance);
 
@@ -336,7 +354,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'WALLET BALANCE',
+                    tr['wallet_balance']?.toUpperCase() ?? 'WALLET BALANCE',
                     style: AppTextStyles.caption.copyWith(
                       color: AppColors.textSecondary,
                       letterSpacing: 1.0,
@@ -385,7 +403,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                     Icon(Icons.add, color: AppColors.textOnPrimary, size: 20),
                     const SizedBox(width: AppSpacing.xs),
                     Text(
-                      'Add Money',
+                      tr['add_money'] ?? 'Add Money',
                       style: AppTextStyles.buttonLabel.copyWith(color: AppColors.textOnPrimary),
                     ),
                   ],
@@ -399,6 +417,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
   }
 
   Widget _buildBalanceCardPlaceholder({bool isLoading = false, bool hasError = false}) {
+    final tr = ref.watch(translationProvider);
     if (isLoading) {
       return ShimmerLoading(
         child: Container(
@@ -451,7 +470,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
             const Icon(Icons.error_outline, color: Colors.orange, size: 36),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Failed to load balance',
+              tr['failed_load_balance'] ?? 'Failed to load balance',
               style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
             ),
           ],
@@ -461,9 +480,10 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
   }
 
   Widget _buildTransactionList(List<WalletTransaction> transactions) {
+    final tr = ref.watch(translationProvider);
     if (transactions.isEmpty) {
       final noTxMsg = _selectedTxFilter == 'All'
-          ? 'No transactions yet.'
+          ? (tr['no_txs_yet'] ?? 'No transactions yet.')
           : 'No ${_selectedTxFilter.toLowerCase()} transactions found.';
       return Container(
         width: double.infinity,

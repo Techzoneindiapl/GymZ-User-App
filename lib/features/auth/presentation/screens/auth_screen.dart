@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/localization/translations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/gradient_scaffold.dart';
 import '../../../../core/widgets/primary_button.dart';
 
-class AuthScreen extends StatelessWidget {
+class AuthScreen extends ConsumerWidget {
   const AuthScreen({
     super.key,
     this.onMobileNumber,
@@ -27,7 +28,8 @@ class AuthScreen extends StatelessWidget {
   final VoidCallback? onPrivacyPolicy;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tr = ref.watch(translationProvider);
     return GradientScaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -40,7 +42,7 @@ class AuthScreen extends StatelessWidget {
                 _GymzLogo(),
                 SizedBox(height: h * 0.06),
                 Text(
-                  'Sign in to start training',
+                  tr['sign_in_to_start'] ?? 'Sign in to start training',
                   style: AppTextStyles.bodySmall.copyWith(fontSize: 16),
                   textAlign: TextAlign.center,
                 ),
@@ -48,12 +50,12 @@ class AuthScreen extends StatelessWidget {
                 _AuthOption(
                   icon: Icons.phone_outlined,
                   iconColor: AppColors.primary,
-                  label: 'Continue with Mobile Number',
+                  label: tr['continue_mobile'] ?? 'Continue with Mobile Number',
                   onTap: onMobileNumber,
                 ),
                 const SizedBox(height: AppSpacing.md),
                 _AuthOption(
-                  label: 'Continue with Google',
+                  label: tr['continue_google'] ?? 'Continue with Google',
                   onTap: onGoogle,
                   customLeading: _GoogleIcon(),
                   iconColor: AppColors.textPrimary,
@@ -61,19 +63,19 @@ class AuthScreen extends StatelessWidget {
                 const SizedBox(height: AppSpacing.md),
                 _AuthOption(
                   icon: Icons.apple,
-                  label: 'Continue with Apple',
+                  label: tr['continue_apple'] ?? 'Continue with Apple',
                   onTap: onApple,
                   iconColor: AppColors.textPrimary,
                 ),
                 const SizedBox(height: AppSpacing.md),
                 _AuthOption(
                   icon: Icons.person_outline,
-                  label: 'Continue as Guest',
+                  label: tr['guest_login'] ?? 'Continue as Guest',
                   onTap: onGuest,
                   iconColor: AppColors.textPrimary,
                 ),
                 SizedBox(height: h * 0.08),
-                PrimaryButton(label: 'Continue', onPressed: onContinue),
+                PrimaryButton(label: tr['continue'] ?? 'Continue', onPressed: onContinue),
                 const SizedBox(height: AppSpacing.lg),
                 _TermsRow(onTerms: onTerms, onPrivacyPolicy: onPrivacyPolicy),
                 const SizedBox(height: AppSpacing.xl),

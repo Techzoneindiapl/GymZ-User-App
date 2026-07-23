@@ -6,6 +6,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/gradient_scaffold.dart';
 import '../../../../core/widgets/primary_button.dart';
+import '../../../../core/localization/translations.dart';
 import '../../application/onboarding_notifier.dart';
 import '../../domain/onboarding_slide.dart';
 import '../../../auth/application/auth_provider.dart';
@@ -90,6 +91,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final state = ref.watch(onboardingProvider);
     final currentIndex = state.currentIndex;
     final isLast = currentIndex == kOnboardingSlides.length - 1;
+    final tr = ref.watch(translationProvider);
 
     return GradientScaffold(
       body: Stack(
@@ -99,7 +101,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             itemCount: kOnboardingSlides.length,
             onPageChanged: ref.read(onboardingProvider.notifier).goToSlide,
             itemBuilder: (context, index) {
-              return _OnboardingPage(slide: kOnboardingSlides[index]);
+              return _OnboardingPage(slide: kOnboardingSlides[index], index: index);
             },
           ),
           Positioned(
@@ -107,7 +109,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             right: AppSpacing.xl,
             child: TextButton(
               onPressed: widget.onSkip,
-              child: Text('Skip', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
+              child: Text(tr['skip'] ?? 'Skip', style: AppTextStyles.body.copyWith(color: AppColors.textSecondary)),
             ),
           ),
           Positioned(
@@ -128,13 +130,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 }
 
-class _OnboardingPage extends StatelessWidget {
-  const _OnboardingPage({required this.slide});
+class _OnboardingPage extends ConsumerWidget {
+  const _OnboardingPage({required this.slide, required this.index});
 
   final OnboardingSlide slide;
+  final int index;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tr = ref.watch(translationProvider);
     final iconColor = slide.iconBgColor == Colors.white
         ? Colors.black
         : AppColors.textOnPrimary;
@@ -165,13 +169,13 @@ class _OnboardingPage extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xxxl + AppSpacing.lg),
           Text(
-            slide.title,
+            index == 0 ? (tr['onboarding_title_1'] ?? slide.title) : (tr['onboarding_title_2'] ?? slide.title),
             textAlign: TextAlign.center,
             style: AppTextStyles.displayLarge,
           ),
           const SizedBox(height: AppSpacing.lg),
           Text(
-            slide.subtitle,
+            index == 0 ? (tr['onboarding_sub_1'] ?? slide.subtitle) : (tr['onboarding_sub_2'] ?? slide.subtitle),
             textAlign: TextAlign.center,
             style: AppTextStyles.bodySmall.copyWith(fontSize: 15),
           ),
@@ -182,7 +186,7 @@ class _OnboardingPage extends StatelessWidget {
   }
 }
 
-class _BottomBar extends StatelessWidget {
+class _BottomBar extends ConsumerWidget {
   const _BottomBar({
     required this.currentIndex,
     required this.totalSlides,
@@ -198,7 +202,8 @@ class _BottomBar extends StatelessWidget {
   final VoidCallback? onGetStarted;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tr = ref.watch(translationProvider);
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.xl),
       child: Column(
@@ -224,7 +229,7 @@ class _BottomBar extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xxl),
           if (isLast)
-            PrimaryButton(label: 'Get Started', onPressed: onGetStarted)
+            PrimaryButton(label: tr['get_started'] ?? 'Get Started', onPressed: onGetStarted)
           else
             Row(
               children: [
@@ -242,7 +247,7 @@ class _BottomBar extends StatelessWidget {
                           borderRadius: BorderRadius.circular(AppRadius.pill),
                           border: Border.all(color: AppColors.surfaceCardBorder),
                         ),
-                        child: Text('Next', style: AppTextStyles.buttonLabel),
+                        child: Text(tr['next'] ?? 'Next', style: AppTextStyles.buttonLabel),
                       ),
                     ),
                   ),

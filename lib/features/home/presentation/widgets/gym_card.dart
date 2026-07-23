@@ -34,145 +34,151 @@ class GymCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        child: Stack(
-          children: [
-            Container(
-              height: 200,
-              width: double.infinity,
-              color: AppColors.surfaceCardSolid,
-              child: gym.imageUrl.isNotEmpty
-                  ? Image.network(
-                      gym.imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Center(
-                        child: Icon(Icons.broken_image_outlined, size: 48, color: AppColors.textMuted),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(color: AppColors.primary, width: 2.0),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.xl - 1.5),
+          child: Stack(
+            children: [
+              Container(
+                height: 200,
+                width: double.infinity,
+                color: AppColors.surfaceCardSolid,
+                child: gym.imageUrl.isNotEmpty
+                    ? Image.network(
+                        gym.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Center(
+                          child: Icon(Icons.broken_image_outlined, size: 48, color: AppColors.textMuted),
+                        ),
+                      )
+                    : Center(
+                        child: Icon(Icons.fitness_center, size: 48, color: AppColors.textMuted),
                       ),
-                    )
-                  : Center(
-                      child: Icon(Icons.fitness_center, size: 48, color: AppColors.textMuted),
+              ),
+              // Dark gradient overlay for text readability.
+              Positioned.fill(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0x00000000), Color(0xCC000000)],
                     ),
-            ),
-            // Dark gradient overlay for text readability.
-            Positioned.fill(
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0x00000000), Color(0xCC000000)],
                   ),
                 ),
               ),
-            ),
-            // Category & Gender badges (top left).
-            Positioned(
-              top: AppSpacing.md,
-              left: AppSpacing.md,
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                    ),
-                    child: Text(gym.category, style: AppTextStyles.caption.copyWith(color: Colors.white)),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                      border: Border.all(
-                        color: _getGenderColor(gym.gender),
-                        width: 1,
-                      ),
-                    ),
-                    child: Text(
-                      gym.gender,
-                      style: AppTextStyles.caption.copyWith(
-                        color: _getGenderColor(gym.gender),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Tier badge (top right).
-            Positioned(
-              top: AppSpacing.md,
-              right: AppSpacing.md,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _tierColor,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                ),
-                child: Text(
-                  gym.tier,
-                  style: AppTextStyles.caption.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
-            // Bottom info row.
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              // Category & Gender badges (top left).
+              Positioned(
+                top: AppSpacing.md,
+                left: AppSpacing.md,
+                child: Row(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(gym.name, style: AppTextStyles.sectionTitle),
-                            Row(
-                              children: [
-                                Icon(Icons.location_on, size: 12, color: AppColors.textSecondary),
-                                const SizedBox(width: 2),
-                                Text(gym.distanceLabel, style: AppTextStyles.caption),
-                              ],
-                            ),
-                          ],
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text('From', style: AppTextStyles.caption),
-                            Text('\u20B9${gym.pricePerSession}', style: AppTextStyles.price),
-                          ],
-                        ),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                      ),
+                      child: Text(gym.category, style: AppTextStyles.caption.copyWith(color: Colors.white)),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(gym.timingLabel, style: AppTextStyles.caption),
-                        Row(
-                          children: [
-                             Icon(Icons.star, size: 14, color: AppColors.starColor),
-                            const SizedBox(width: 2),
-                            Text(gym.rating.toString(), style: AppTextStyles.caption),
-                          ],
+                    const SizedBox(width: AppSpacing.xs),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        border: Border.all(
+                          color: _getGenderColor(gym.gender),
+                          width: 1,
                         ),
-                      ],
+                      ),
+                      child: Text(
+                        gym.gender,
+                        style: AppTextStyles.caption.copyWith(
+                          color: _getGenderColor(gym.gender),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+              // Tier badge (top right).
+              Positioned(
+                top: AppSpacing.md,
+                right: AppSpacing.md,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _tierColor,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                  child: Text(
+                    gym.tier,
+                    style: AppTextStyles.caption.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+              // Bottom info row.
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(gym.name, style: AppTextStyles.sectionTitle),
+                              Row(
+                                children: [
+                                  Icon(Icons.location_on, size: 12, color: AppColors.textSecondary),
+                                  const SizedBox(width: 2),
+                                  Text(gym.distanceLabel, style: AppTextStyles.caption),
+                                ],
+                              ),
+                            ],
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text('From', style: AppTextStyles.caption),
+                              Text('\u20B9${gym.pricePerSession}', style: AppTextStyles.price),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(gym.timingLabel, style: AppTextStyles.caption),
+                          Row(
+                            children: [
+                               Icon(Icons.star, size: 14, color: AppColors.starColor),
+                              const SizedBox(width: 2),
+                              Text(gym.rating.toString(), style: AppTextStyles.caption),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

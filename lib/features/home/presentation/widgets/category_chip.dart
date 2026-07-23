@@ -9,14 +9,17 @@ class CategoryChip extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.isSelected = false,
+    this.categoryName = '',
   });
 
   final String label;
   final VoidCallback onTap;
   final bool isSelected;
+  final String categoryName;
 
   IconData get _icon {
-    switch (label) {
+    final matchKey = categoryName.isNotEmpty ? categoryName : label;
+    switch (matchKey) {
       case 'Gym': return Icons.fitness_center;
       case 'Yoga': return Icons.self_improvement;
       case 'Sports': return Icons.sports_soccer;

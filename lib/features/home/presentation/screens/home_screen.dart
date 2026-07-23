@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/localization/translations.dart';
+import '../../../../core/localization/language_provider.dart';
 import 'package:gymz_user/features/home/domain/gym_model.dart';
 import 'package:gymz_user/features/home/presentation/widgets/category_chip.dart';
 import 'package:gymz_user/features/home/presentation/widgets/gym_card.dart';
@@ -74,6 +76,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final filteredGymsAsync = ref.watch(filteredGymsProvider);
     final selectedCategory = ref.watch(selectedCategoryProvider);
     final selectedTiers = ref.watch(selectedTiersProvider);
+    final tr = ref.watch(translationProvider);
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -109,7 +112,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: AppSpacing.xxl),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-              child: _SectionHeader(title: 'Categories', onSeeAll: () {}),
+              child: _SectionHeader(title: tr['categories'] ?? 'Categories', onSeeAll: () {}),
             ),
             const SizedBox(height: AppSpacing.md),
             Padding(
@@ -121,9 +124,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     Builder(
                       builder: (context) {
                         final isSelected = selectedCategory == category;
+                        final String translatedCategory;
+                        switch (category) {
+                          case 'Gym':
+                            translatedCategory = tr['category_gym'] ?? 'Gym';
+                            break;
+                          case 'Yoga':
+                            translatedCategory = tr['category_yoga'] ?? 'Yoga';
+                            break;
+                          case 'Sports':
+                            translatedCategory = tr['category_sports'] ?? 'Sports';
+                            break;
+                          case 'Zumba':
+                            translatedCategory = tr['category_zumba'] ?? 'Zumba';
+                            break;
+                          default:
+                            translatedCategory = category;
+                        }
                         return CategoryChip(
-                          label: category,
+                          label: translatedCategory,
                           isSelected: isSelected,
+                          categoryName: category,
                           onTap: () {
                             final notifier = ref.read(selectedCategoryProvider.notifier);
                             if (isSelected) {
@@ -142,7 +163,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: AppSpacing.xxl),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-              child: _SectionHeader(title: 'Nearby Gyms', onSeeAll: widget.onSeeAllNearby),
+              child: _SectionHeader(title: tr['nearby_gyms'] ?? 'Nearby Gyms', onSeeAll: widget.onSeeAllNearby),
             ),
             const SizedBox(height: AppSpacing.md),
             filteredGymsAsync.when(
@@ -152,7 +173,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
                     child: Center(
                       child: Text(
-                        'No gyms found matching your criteria.',
+                        tr['no_gyms_found'] ?? 'No gyms found matching your criteria.',
                         style: TextStyle(color: AppColors.textMuted, fontSize: 16),
                       ),
                     ),
@@ -203,7 +224,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: AppSpacing.sm),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-              child: _SectionHeader(title: 'Premium Tiers', onSeeAll: widget.onSeeAllTiers),
+              child: _SectionHeader(title: tr['premium_tiers'] ?? 'Premium Tiers', onSeeAll: widget.onSeeAllTiers),
             ),
             const SizedBox(height: AppSpacing.md),
             Padding(
@@ -246,7 +267,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-class _HomeHeader extends StatelessWidget {
+class _HomeHeader extends ConsumerWidget {
   const _HomeHeader({
     required this.firstName,
     required this.avatarPath,
@@ -260,7 +281,8 @@ class _HomeHeader extends StatelessWidget {
   final VoidCallback? onPassTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tr = ref.watch(translationProvider);
     return Row(
       children: [
         CircleAvatar(
@@ -280,7 +302,7 @@ class _HomeHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Hello,', style: AppTextStyles.bodySmall),
+              Text(tr['hello'] ?? 'Hello,', style: AppTextStyles.bodySmall),
               Text('$firstName \uD83D\uDC4B', style: AppTextStyles.sectionTitle),
             ],
           ),
@@ -301,20 +323,21 @@ class _HomeHeader extends StatelessWidget {
   }
 }
 
-class _SectionHeader extends StatelessWidget {
+class _SectionHeader extends ConsumerWidget {
   const _SectionHeader({required this.title, this.onSeeAll});
   final String title;
   final VoidCallback? onSeeAll;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tr = ref.watch(translationProvider);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title, style: AppTextStyles.sectionTitle),
         GestureDetector(
           onTap: onSeeAll,
-          child: Text('See all', style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary)),
+          child: Text(tr['see_all'] ?? 'See all', style: AppTextStyles.bodySmall.copyWith(color: AppColors.primary)),
         ),
       ],
     );

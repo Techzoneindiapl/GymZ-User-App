@@ -24,6 +24,8 @@ import '../../../../core/widgets/gradient_scaffold.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/user_shell_screen.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../../../core/localization/translations.dart';
+import '../../../../core/localization/language_provider.dart';
 
 
 class MyPassScreen extends ConsumerStatefulWidget {
@@ -251,6 +253,7 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
   }
 
   Widget _buildUpcomingTab(AsyncValue<List<BookingModel>> bookingsState, String userName, String userId) {
+    final tr = ref.watch(translationProvider);
     return bookingsState.when(
       loading: () => const ShimmerLoading(
         child: _MyPassScreenSkeleton(),
@@ -269,10 +272,10 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
         if (bookings.isEmpty) {
           return RefreshIndicator(
             onRefresh: () => ref.read(bookingHistoryProvider.notifier).refreshHistory(),
-            child: SingleChildScrollView(
+            child: const SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(AppSpacing.xl),
-              child: _EmptyPassState(ref: ref),
+              child: _EmptyPassState(),
             ),
           );
         }
@@ -324,7 +327,7 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
                         const SizedBox(width: AppSpacing.xs),
                         Expanded(
                           child: Text(
-                            'Use your digital pass for past/unused booking',
+                            tr['use_digital_pass_msg'] ?? 'Use your digital pass for past/unused booking',
                             style: AppTextStyles.bodySmall.copyWith(
                               color: AppColors.primary,
                               fontWeight: FontWeight.w600,
@@ -354,7 +357,9 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
                     children: [
                       Expanded(
                         child: PrimaryButton(
-                          label: _isDownloading ? 'Downloading...' : 'Download',
+                          label: _isDownloading 
+                              ? (tr['downloading'] ?? 'Downloading...') 
+                              : (tr['download'] ?? 'Download'),
                           leadingIcon: _isDownloading ? null : Icons.download_outlined,
                           onPressed: _isDownloading ? null : () => _downloadPass(latestBooking),
                         ),
@@ -386,7 +391,9 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
                                       : Icon(Icons.share_outlined, size: 18, color: AppColors.textPrimary),
                                   const SizedBox(width: AppSpacing.sm),
                                   Text(
-                                    _isSharing ? 'Sharing...' : 'Share',
+                                    _isSharing 
+                                        ? (tr['sharing'] ?? 'Sharing...') 
+                                        : (tr['share'] ?? 'Share'),
                                     style: AppTextStyles.buttonLabel,
                                   ),
                                 ],
@@ -412,7 +419,7 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
                         const SizedBox(width: AppSpacing.xs),
                         Expanded(
                           child: Text(
-                            'Use your digital pass for past/unused bookings',
+                            tr['use_digital_pass_msg'] ?? 'Use your digital pass for past/unused bookings',
                             style: AppTextStyles.bodySmall.copyWith(
                               color: AppColors.primary,
                               fontWeight: FontWeight.w600,
@@ -425,17 +432,34 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
                 ],
                 if (listBookings.isNotEmpty || _selectedBookingFilter != 'All') ...[
                   const SizedBox(height: AppSpacing.xxl),
-                  Text('My Bookings', style: AppTextStyles.sectionTitle),
+                  Text(tr['my_bookings'] ?? 'My Bookings', style: AppTextStyles.sectionTitle),
                   const SizedBox(height: AppSpacing.md),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: ['All', 'Active', 'Used', 'Upcoming'].map((filter) {
                         final isSelected = _selectedBookingFilter == filter;
+                        final String translatedFilter;
+                        switch (filter) {
+                          case 'All':
+                            translatedFilter = tr['all'] ?? 'All';
+                            break;
+                          case 'Active':
+                            translatedFilter = tr['active'] ?? 'Active';
+                            break;
+                          case 'Used':
+                            translatedFilter = tr['used'] ?? 'Used';
+                            break;
+                          case 'Upcoming':
+                            translatedFilter = tr['upcoming'] ?? 'Upcoming';
+                            break;
+                          default:
+                            translatedFilter = filter;
+                        }
                         return Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: ChoiceChip(
-                            label: Text(filter),
+                            label: Text(translatedFilter),
                             selected: isSelected,
                             onSelected: (selected) {
                               if (selected) {
@@ -467,7 +491,7 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
                           padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
                           child: Center(
                             child: Text(
-                              'No bookings found.',
+                              tr['no_bookings_found'] ?? 'No bookings found.',
                               style: AppTextStyles.bodySmall.copyWith(fontStyle: FontStyle.italic),
                             ),
                           ),
@@ -568,6 +592,7 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
   }
 
   Widget _buildMyReviewsTab(AsyncValue<List<ReviewModel>> myReviewsAsync) {
+    final tr = ref.watch(translationProvider);
     return myReviewsAsync.when(
       loading: () => const ShimmerLoading(
         child: Padding(
@@ -601,12 +626,12 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
                       Icon(Icons.rate_review_outlined, size: 64, color: AppColors.textSecondary.withOpacity(0.5)),
                       const SizedBox(height: AppSpacing.md),
                       Text(
-                        'No Reviews Yet',
+                        tr['no_reviews_yet'] ?? 'No Reviews Yet',
                         style: AppTextStyles.sectionTitle.copyWith(color: AppColors.textSecondary),
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       Text(
-                        'Share your experience about gyms you have visited!',
+                        tr['share_experience_msg'] ?? 'Share your experience about gyms you have visited!',
                         style: AppTextStyles.bodySmall,
                       ),
                     ],
@@ -645,6 +670,7 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
     final user = ref.watch(authProvider).user;
     final userName = user?.name ?? 'Guest User';
     final userId = user?.memberId ?? 'GZ-GUEST';
+    final tr = ref.watch(translationProvider);
 
     return DefaultTabController(
       length: 3,
@@ -655,7 +681,7 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, 0),
-                child: Text('My Pass', style: AppTextStyles.displayMedium),
+                child: Text(tr['my_passes'] ?? 'My Pass', style: AppTextStyles.displayMedium),
               ),
               const SizedBox(height: AppSpacing.md),
               TabBar(
@@ -665,10 +691,10 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
                 indicatorWeight: 3,
                 labelStyle: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700),
                 unselectedLabelStyle: AppTextStyles.body,
-                tabs: const [
-                  Tab(text: 'My Bookings'),
-                  Tab(text: 'Rate Gyms'),
-                  Tab(text: 'My Reviews'),
+                tabs: [
+                  Tab(text: tr['my_bookings'] ?? 'My Bookings'),
+                  Tab(text: tr['rate_gyms'] ?? 'Rate Gyms'),
+                  Tab(text: tr['my_reviews'] ?? 'My Reviews'),
                 ],
               ),
               Expanded(
@@ -965,12 +991,12 @@ class _UpcomingPassItem extends StatelessWidget {
   }
 }
 
-class _EmptyPassState extends StatelessWidget {
-  const _EmptyPassState({required this.ref});
-  final WidgetRef ref;
+class _EmptyPassState extends ConsumerWidget {
+  const _EmptyPassState({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tr = ref.watch(translationProvider);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xxl),
@@ -985,12 +1011,12 @@ class _EmptyPassState extends StatelessWidget {
           Icon(Icons.airplane_ticket_outlined, size: 64, color: AppColors.primary.withOpacity(0.8)),
           const SizedBox(height: AppSpacing.xl),
           Text(
-            'No Active Bookings',
+            tr['empty_passes'] ?? 'No Active Bookings',
             style: AppTextStyles.sectionTitle.copyWith(fontSize: 20),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Explore fitness centers and book a session to get your check-in pass card here.',
+            tr['empty_passes_sub'] ?? 'Explore fitness centers and book a session to get your check-in pass card here.',
             textAlign: TextAlign.center,
             style: AppTextStyles.bodySmall.copyWith(fontSize: 14),
           ),
@@ -998,7 +1024,7 @@ class _EmptyPassState extends StatelessWidget {
           SizedBox(
             width: 200,
             child: PrimaryButton(
-              label: 'Explore Gyms',
+              label: tr['explore_gyms'] ?? 'Explore Gyms',
               onPressed: () {
                 ref.read(shellTabIndexProvider.notifier).state = 1;
               },

@@ -11,6 +11,15 @@ class StorageService {
 
   static const _tokenKey = 'auth_token';
   static const _userKey = 'cached_user';
+  static const _langKey = 'language_code';
+
+  Future<void> saveLanguage(String langCode) async {
+    await _storage.write(key: _langKey, value: langCode);
+  }
+
+  Future<String?> getLanguage() async {
+    return await _storage.read(key: _langKey);
+  }
 
   Future<void> saveToken(String token) async {
     await _storage.write(key: _tokenKey, value: token);

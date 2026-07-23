@@ -13,6 +13,8 @@ import '../../features/auth/application/auth_provider.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import '../localization/translations.dart';
+import '../localization/language_provider.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/theme_provider.dart';
 import '../router/route_names.dart';
@@ -170,6 +172,7 @@ class _UserShellScreenState extends ConsumerState<UserShellScreen> {
 }
 
   Future<bool> _showExitDialog(BuildContext context) async {
+    final tr = ref.read(translationProvider);
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -185,13 +188,13 @@ class _UserShellScreenState extends ConsumerState<UserShellScreen> {
               Icon(Icons.exit_to_app_rounded, color: AppColors.danger, size: 28),
               const SizedBox(width: AppSpacing.sm),
               Text(
-                'Exit App',
+                tr['exit_app'] ?? 'Exit App',
                 style: AppTextStyles.displayMedium.copyWith(fontSize: 20, color: AppColors.textPrimary),
               ),
             ],
           ),
           content: Text(
-            'Are you sure you want to exit GymZ?',
+            tr['exit_confirm'] ?? 'Are you sure you want to exit GymZ?',
             style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
           ),
           actionsPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
@@ -199,7 +202,7 @@ class _UserShellScreenState extends ConsumerState<UserShellScreen> {
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
               child: Text(
-                'Cancel',
+                tr['cancel'] ?? 'Cancel',
                 style: AppTextStyles.label.copyWith(color: AppColors.textSecondary),
               ),
             ),
@@ -214,7 +217,7 @@ class _UserShellScreenState extends ConsumerState<UserShellScreen> {
               ),
               onPressed: () => Navigator.of(context).pop(true),
               child: Text(
-                'Exit',
+                tr['exit'] ?? 'Exit',
                 style: AppTextStyles.label.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
@@ -226,7 +229,7 @@ class _UserShellScreenState extends ConsumerState<UserShellScreen> {
   }
 }
 
-class _UserBottomNavBar extends StatelessWidget {
+class _UserBottomNavBar extends ConsumerWidget {
   const _UserBottomNavBar({required this.currentIndex, required this.tabs, required this.onTap});
 
   final int currentIndex;
@@ -234,7 +237,8 @@ class _UserBottomNavBar extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tr = ref.watch(translationProvider);
     return Container(
       height: 72,
       padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -289,6 +293,27 @@ class _UserBottomNavBar extends StatelessWidget {
 
             final color = isSelected ? AppColors.primary : AppColors.textMuted;
 
+            final String translatedLabel;
+            switch (tab.label) {
+              case 'Home':
+                translatedLabel = tr['home'] ?? 'Home';
+                break;
+              case 'Explore':
+                translatedLabel = tr['explore'] ?? 'Explore';
+                break;
+              case 'Wallet':
+                translatedLabel = tr['wallet'] ?? 'Wallet';
+                break;
+              case 'Passes':
+                translatedLabel = tr['passes'] ?? 'Passes';
+                break;
+              case 'Profile':
+                translatedLabel = tr['profile'] ?? 'Profile';
+                break;
+              default:
+                translatedLabel = tab.label;
+            }
+
             return Expanded(
               child: GestureDetector(
                 onTap: () => onTap(index),
@@ -297,7 +322,7 @@ class _UserBottomNavBar extends StatelessWidget {
                   children: [
                     Icon(isSelected ? tab.activeIcon : tab.icon, color: color, size: 22),
                     const SizedBox(height: 3),
-                    Text(tab.label, style: AppTextStyles.navLabel.copyWith(color: color)),
+                    Text(translatedLabel, style: AppTextStyles.navLabel.copyWith(color: color)),
                   ],
                 ),
               ),

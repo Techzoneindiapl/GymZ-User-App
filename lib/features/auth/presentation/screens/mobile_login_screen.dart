@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gymz_user/core/router/route_names.dart';
@@ -9,6 +10,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/gradient_scaffold.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../application/auth_provider.dart';
+import '../../../../core/localization/translations.dart';
 
 class MobileLoginScreen extends ConsumerStatefulWidget {
   const MobileLoginScreen({super.key});
@@ -18,34 +20,32 @@ class MobileLoginScreen extends ConsumerStatefulWidget {
 }
 
 class _MobileLoginScreenState extends ConsumerState<MobileLoginScreen> {
-  final _phoneController = TextEditingController();
+  late final TextEditingController _phoneController;
   bool _isValid = false;
 
   @override
   void initState() {
     super.initState();
-    _phoneController.addListener(_validatePhone);
+    _phoneController = TextEditingController();
+    _phoneController.addListener(_validateInput);
   }
 
   @override
   void dispose() {
-    _phoneController.removeListener(_validatePhone);
     _phoneController.dispose();
     super.dispose();
   }
 
-  void _validatePhone() {
-    final digits = _phoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
+  void _validateInput() {
     setState(() {
-      _isValid = digits.length == 10;
+      _isValid = _phoneController.text.length == 10;
     });
   }
 
   Future<void> _handleSendOtp() async {
     if (!_isValid) return;
 
-    final phone = _phoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
-    final success = await ref.read(authProvider.notifier).sendOtp(phone);
+    final success = await ref.read(authProvider.notifier).sendOtp(_phoneController.text);
 
     if (success && mounted) {
       context.pushNamed(RouteNames.verifyOtp);
@@ -56,6 +56,7 @@ class _MobileLoginScreenState extends ConsumerState<MobileLoginScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final isLoading = authState.status == AuthStatus.authenticating;
+    final tr = ref.watch(translationProvider);
 
     return GradientScaffold(
       body: Column(
@@ -71,7 +72,7 @@ class _MobileLoginScreenState extends ConsumerState<MobileLoginScreen> {
                   style: IconButton.styleFrom(backgroundColor: AppColors.surfaceCard),
                 ),
                 const SizedBox(width: AppSpacing.md),
-                Text('Mobile Login', style: AppTextStyles.displayMedium),
+                Text(tr['mobile_login_title'] ?? 'Mobile Login', style: AppTextStyles.displayMedium),
               ],
             ),
           ),
@@ -84,7 +85,7 @@ class _MobileLoginScreenState extends ConsumerState<MobileLoginScreen> {
                 children: [
                   const SizedBox(height: AppSpacing.xl),
                   Text(
-                    'Enter your phone number to continue',
+                    tr['mobile_login_sub'] ?? 'Enter your phone number to continue',
                     style: AppTextStyles.bodySmall.copyWith(fontSize: 16),
                   ),
                   const SizedBox(height: AppSpacing.xxl),
@@ -92,7 +93,7 @@ class _MobileLoginScreenState extends ConsumerState<MobileLoginScreen> {
                   // Phone input field wrapper
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: Text('Phone Number', style: AppTextStyles.bodySmall),
+                    child: Text(tr['phone_number'] ?? 'Phone Number', style: AppTextStyles.bodySmall),
                   ),
                   TextField(
                     controller: _phoneController,
@@ -100,8 +101,12 @@ class _MobileLoginScreenState extends ConsumerState<MobileLoginScreen> {
                     style: AppTextStyles.body,
                     cursorColor: AppColors.primary,
                     maxLength: 10,
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(10),
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
                     decoration: InputDecoration(
-                      hintText: '7400105833',
+                      hintText: tr['enter_mobile_hint'] ?? '7400105833',
                       hintStyle: AppTextStyles.body.copyWith(color: AppColors.textMuted),
                       prefixText: '+91 ',
                       prefixStyle: AppTextStyles.body.copyWith(
@@ -152,7 +157,7 @@ class _MobileLoginScreenState extends ConsumerState<MobileLoginScreen> {
                   const SizedBox(height: AppSpacing.xxxl),
                   
                   PrimaryButton(
-                    label: 'Send OTP',
+                    label: tr['send_otp'] ?? 'Send OTP',
                     isEnabled: _isValid && !isLoading,
                     isLoading: isLoading,
                     onPressed: _handleSendOtp,

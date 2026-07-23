@@ -8,6 +8,9 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/theme/theme_provider.dart';
 import '../../../../core/theme/text_size_provider.dart';
+import '../../../../core/localization/app_language.dart';
+import '../../../../core/localization/language_provider.dart';
+import '../../../../core/localization/translations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -290,6 +293,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final themeMode = ref.watch(themeModeProvider);
     final isDarkMode = themeMode == ThemeMode.dark;
     final profileState = ref.watch(profileProvider);
+    final tr = ref.watch(translationProvider);
 
     ref.listen<AsyncValue<UserModel?>>(profileProvider, (previous, next) {
       if (next.hasError && !next.isLoading) {
@@ -318,7 +322,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Profile', style: AppTextStyles.displayMedium),
+                  Text(tr['profile'] ?? 'Profile', style: AppTextStyles.displayMedium),
                   if (profileState.isLoading)
                       SizedBox(
                       width: 20,
@@ -436,7 +440,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               const SizedBox(height: AppSpacing.xl),
               // Appearance toggle.
-              Text('APPEARANCE', style: AppTextStyles.label),
+              Text(tr['theme']?.toUpperCase() ?? 'THEME', style: AppTextStyles.label),
               const SizedBox(height: AppSpacing.sm),
               Container(
                 padding: const EdgeInsets.all(4),
@@ -467,7 +471,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               const SizedBox(height: AppSpacing.xl),
               // Text size toggle.
-              Text('TEXT SIZE', style: AppTextStyles.label),
+              Text(tr['text_size']?.toUpperCase() ?? 'TEXT SIZE', style: AppTextStyles.label),
               const SizedBox(height: AppSpacing.sm),
               Container(
                 padding: const EdgeInsets.all(4),
@@ -495,29 +499,61 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
+              // Language selection.
+              Text(tr['language']?.toUpperCase() ?? 'LANGUAGE', style: AppTextStyles.label),
+              const SizedBox(height: AppSpacing.sm),
+              InkWell(
+                onTap: () => _showLanguagePicker(context),
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceCard,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.surfaceCardBorder),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.language_rounded, color: AppColors.primary, size: 24),
+                          const SizedBox(width: AppSpacing.md),
+                          Text(
+                            ref.watch(languageProvider).nativeName,
+                            style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                      Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
               // Rewards Card
               _buildRewardsCard(widget.sessionCount),
               const SizedBox(height: AppSpacing.lg),
               // Menu list.
               _MenuCard(
                 items: [
-                  _MenuItem(icon: Icons.credit_card_outlined, label: 'Fitness Card', onTap: widget.onFitnessCard),
-                  _MenuItem(icon: Icons.history_outlined, label: 'Booking History', onTap: widget.onBookingHistory),
-                  _MenuItem(icon: Icons.wallet_outlined, label: 'Wallet', onTap: widget.onWallet),
+                  _MenuItem(icon: Icons.credit_card_outlined, label: tr['fitness_card'] ?? 'Fitness Card', onTap: widget.onFitnessCard),
+                  _MenuItem(icon: Icons.history_outlined, label: tr['booking_history'] ?? 'Booking History', onTap: widget.onBookingHistory),
+                  _MenuItem(icon: Icons.wallet_outlined, label: tr['wallet'] ?? 'Wallet', onTap: widget.onWallet),
                   // _MenuItem(icon: Icons.settings_outlined, label: 'Settings', onTap: widget.onSettings),
                   _MenuItem(
                     icon: Icons.privacy_tip_outlined,
-                    label: 'Privacy Policy',
+                    label: tr['privacy_policy'] ?? 'Privacy Policy',
                     onTap: () => _launchURL('https://www.gymz.co.in/privacy'),
                   ),
                   _MenuItem(
                     icon: Icons.description_outlined,
-                    label: 'Terms and Conditions',
+                    label: tr['terms_and_conditions'] ?? 'Terms and Conditions',
                     onTap: () => _launchURL('https://www.gymz.co.in/terms'),
                   ),
                   _MenuItem(
                     icon: Icons.help_outline_outlined,
-                    label: 'Help & Support',
+                    label: tr['help_and_support'] ?? 'Help & Support',
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -549,7 +585,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       children: [
                         Icon(Icons.logout, size: 18, color: AppColors.danger),
                         const SizedBox(width: AppSpacing.sm),
-                        Text('Logout', style: AppTextStyles.buttonLabel.copyWith(color: AppColors.danger)),
+                        Text(tr['logout'] ?? 'Logout', style: AppTextStyles.buttonLabel.copyWith(color: AppColors.danger)),
                       ],
                     ),
                   ),
@@ -560,6 +596,85 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showLanguagePicker(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.surfaceCard,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+        side: BorderSide(color: AppColors.surfaceCardBorder),
+      ),
+      builder: (context) {
+        return Consumer(
+          builder: (context, ref, child) {
+            final currentLanguage = ref.watch(languageProvider);
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xl),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Select Language',
+                      style: AppTextStyles.displayMedium.copyWith(fontSize: 20),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: AppLanguage.values.length,
+                        itemBuilder: (context, index) {
+                          final language = AppLanguage.values[index];
+                          final isSelected = currentLanguage == language;
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: InkWell(
+                              onTap: () {
+                                ref.read(languageProvider.notifier).setLanguage(language);
+                                Navigator.pop(context);
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? AppColors.primary.withOpacity(0.08) : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isSelected ? AppColors.primary : Colors.transparent,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      language.nativeName,
+                                      style: AppTextStyles.body.copyWith(
+                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                        color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    if (isSelected)
+                                      Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
