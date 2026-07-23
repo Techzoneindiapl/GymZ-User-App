@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import '../storage/storage_service.dart';
 
+import 'api_exceptions.dart';
+
 class ApiClient {
   ApiClient(this._storageService) {
     _dio = Dio(
@@ -69,8 +71,10 @@ class ApiClient {
         queryParameters: queryParameters,
         options: options,
       );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
     } catch (e) {
-      rethrow;
+      throw ApiException(message: e.toString(), originalException: e);
     }
   }
 
@@ -87,8 +91,50 @@ class ApiClient {
         queryParameters: queryParameters,
         options: options,
       );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
     } catch (e) {
-      rethrow;
+      throw ApiException(message: e.toString(), originalException: e);
+    }
+  }
+
+  Future<Response<T>> put<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    try {
+      return await _dio.put<T>(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    } catch (e) {
+      throw ApiException(message: e.toString(), originalException: e);
+    }
+  }
+
+  Future<Response<T>> delete<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    try {
+      return await _dio.delete<T>(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    } catch (e) {
+      throw ApiException(message: e.toString(), originalException: e);
     }
   }
 }

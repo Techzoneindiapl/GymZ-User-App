@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/api_exceptions.dart';
 import '../../domain/wallet_model.dart';
 
 class WalletRepository {
@@ -21,7 +22,7 @@ class WalletRepository {
           }
         }
       }
-      throw Exception('Failed to load wallet data: Invalid response');
+      throw ApiException(message: 'Failed to load wallet data: Invalid response', statusCode: response.statusCode);
     } catch (e) {
       rethrow;
     }
@@ -69,8 +70,16 @@ class WalletRepository {
           }
         }
       }
-      throw Exception('Failed to recharge wallet');
+      throw ApiException(message: 'Failed to recharge wallet', statusCode: response.statusCode);
     } catch (e) {
+      if (e is ApiException) {
+        if (e.statusCode != 404 && e.statusCode != 405 && e.statusCode != 501) {
+          rethrow;
+        }
+      } else {
+        rethrow;
+      }
+
       // Fallback in case backend doesn't support simulated top-ups (offline / prototype mock):
       try {
         final currentWallet = await fetchWallet();

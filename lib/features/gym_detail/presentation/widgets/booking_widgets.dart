@@ -7,6 +7,10 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/outline_button.dart';
 import '../../../home/domain/gym_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/widgets/user_shell_screen.dart';
+import '../../../../core/router/route_names.dart';
 
 enum BookingDialogResult { confirm, edit }
 
@@ -609,7 +613,7 @@ class BookingConfirmationDialog extends StatelessWidget {
 }
 
 /// A beautiful ticket-styled success popup that displays after booking confirmation.
-class BookingSuccessDialog extends StatelessWidget {
+class BookingSuccessDialog extends ConsumerWidget {
   const BookingSuccessDialog({
     super.key,
     required this.gym,
@@ -624,7 +628,7 @@ class BookingSuccessDialog extends StatelessWidget {
   final String bookingId;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final formattedDate = DateFormat('EEE, d MMMM yyyy').format(date);
 
     return Dialog(
@@ -737,8 +741,8 @@ class BookingSuccessDialog extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSpacing.md),
                         // Barcode placeholder graphic for premium look
-                        const SizedBox(height: AppSpacing.sm),
-                        _buildBarcodeGraphics(),
+                        // const SizedBox(height: AppSpacing.sm),
+                        // _buildBarcodeGraphics(),
                       ],
                     ),
                   ),
@@ -748,18 +752,19 @@ class BookingSuccessDialog extends StatelessWidget {
             const SizedBox(height: AppSpacing.xl),
 
             // Help info
-            Text(
-              'Present this pass at the gym counter to start your session.',
-              style: AppTextStyles.caption,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.lg),
+            // Text(
+            //   'Present this pass at the gym counter to start your session.',
+            //   style: AppTextStyles.caption,
+            //   textAlign: TextAlign.center,
+            // ),
+            // const SizedBox(height: AppSpacing.lg),
 
             // Done Button
             PrimaryButton(
               label: 'Done',
               onPressed: () {
-                Navigator.pop(context);
+                ref.read(shellTabIndexProvider.notifier).state = 3;
+                context.goNamed(RouteNames.home);
               },
             ),
           ],

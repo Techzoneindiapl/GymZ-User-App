@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gymz_user/features/pass/domain/review_model.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/api_exceptions.dart';
 import '../../domain/gym_model.dart';
 
 
@@ -86,7 +87,7 @@ class GymRepository {
           }
         }
       }
-      throw Exception('Failed to load gym details');
+      throw ApiException(message: 'Failed to load gym details', statusCode: response.statusCode);
     } catch (e) {
       rethrow;
     }
@@ -109,7 +110,7 @@ class GymRepository {
       );
 
       if (response.statusCode != 200 && response.statusCode != 201) {
-        throw Exception('Failed to submit review');
+        throw ApiException(message: 'Failed to submit review', statusCode: response.statusCode);
       }
     } catch (e) {
       rethrow;

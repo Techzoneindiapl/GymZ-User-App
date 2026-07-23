@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,7 +44,7 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
       if (boundary == null) return null;
 
       // Allow frame build to complete
-      if (boundary.debugNeedsPaint) {
+      if (kDebugMode && boundary.debugNeedsPaint) {
         await Future<void>.delayed(const Duration(milliseconds: 100));
       }
 

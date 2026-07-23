@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
+import '../../../../core/network/api_exceptions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/services/notification_service.dart';
@@ -86,11 +87,11 @@ class AuthRepository {
         }
       }
       return const VerifyOtpResponse(isRegistered: false);
-    } on DioException catch (e) {
+    } on ApiException catch (e) {
       // If server returns 404 (user not found) or similar, it means the OTP is valid but the user is not registered.
       // Let's check if the OTP is invalid or if the user is just not registered.
       // Usually, if the API returns 404 for login-otp, it means user is not registered.
-      if (e.response?.statusCode == 404) {
+      if (e.statusCode == 404) {
         return const VerifyOtpResponse(isRegistered: false);
       }
       rethrow;
@@ -126,7 +127,7 @@ class AuthRepository {
         ),
       });
 
-      final response = await _apiClient.dio.post(
+      final response = await _apiClient.post(
         'api/v1/user/register',
         data: formData,
         options: Options(

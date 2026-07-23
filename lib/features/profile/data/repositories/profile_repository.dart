@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/network/api_exceptions.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../auth/domain/user_model.dart';
 
@@ -23,7 +24,7 @@ class ProfileRepository {
           }
         }
       }
-      throw Exception('Failed to load user profile: Invalid response');
+      throw ApiException(message: 'Failed to load user profile: Invalid response', statusCode: response.statusCode);
     } catch (e) {
       rethrow;
     }
@@ -42,7 +43,7 @@ class ProfileRepository {
         ),
       });
 
-      final response = await _apiClient.dio.put(
+      final response = await _apiClient.put(
         'api/v1/user/profile',
         data: formData,
         options: Options(
@@ -61,7 +62,7 @@ class ProfileRepository {
           }
         }
       }
-      throw Exception('Failed to update profile image: Invalid response');
+      throw ApiException(message: 'Failed to update profile image: Invalid response', statusCode: response.statusCode);
     } catch (e) {
       rethrow;
     }

@@ -10,7 +10,9 @@ import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/wallet/presentation/screens/wallet_screen.dart';
 import '../../features/auth/presentation/screens/fitness_pass_screen.dart';
 import '../../features/auth/application/auth_provider.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/theme_provider.dart';
 import '../router/route_names.dart';
@@ -74,13 +76,22 @@ class _UserShellScreenState extends ConsumerState<UserShellScreen> {
       }
     });
 
-    return GradientScaffold(
-      bottomBar: _UserBottomNavBar(currentIndex: currentIndex, tabs: _tabs, onTap: _onTabTapped),
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: _onPageChanged,
-        physics: const NeverScrollableScrollPhysics(),
-        children: [
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        final shouldExit = await _showExitDialog(context);
+        if (shouldExit && context.mounted) {
+          await SystemNavigator.pop();
+        }
+      },
+      child: GradientScaffold(
+        bottomBar: _UserBottomNavBar(currentIndex: currentIndex, tabs: _tabs, onTap: _onTabTapped),
+        body: PageView(
+          controller: _pageController,
+          onPageChanged: _onPageChanged,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
           HomeScreen(
             ownerFirstName: ref.watch(authProvider).user?.name ?? 'Guest User',
             avatarPath: ref.watch(authProvider).user?.selfieUrl,
@@ -154,7 +165,64 @@ class _UserShellScreenState extends ConsumerState<UserShellScreen> {
           ),
         ],
       ),
+    ),
+  );
+}
+
+  Future<bool> _showExitDialog(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.surfaceCard,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            side: BorderSide(color: AppColors.surfaceCardBorder),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.exit_to_app_rounded, color: AppColors.danger, size: 28),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                'Exit App',
+                style: AppTextStyles.displayMedium.copyWith(fontSize: 20, color: AppColors.textPrimary),
+              ),
+            ],
+          ),
+          content: Text(
+            'Are you sure you want to exit GymZ?',
+            style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
+          ),
+          actionsPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                'Cancel',
+                style: AppTextStyles.label.copyWith(color: AppColors.textSecondary),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(
+                'Exit',
+                style: AppTextStyles.label.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
     );
+    return result ?? false;
   }
 }
 

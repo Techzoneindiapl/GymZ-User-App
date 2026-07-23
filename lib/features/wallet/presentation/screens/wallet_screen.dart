@@ -67,12 +67,14 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
           ),
         );
       } else {
+        final error = ref.read(walletProvider).error;
+        final errorMsg = error?.toString().replaceAll('Exception: ', '') ?? 'Failed to add money. Please try again.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: AppColors.danger,
-            content: const Text(
-              'Failed to add money. Please try again.',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            content: Text(
+              errorMsg,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ),
         );

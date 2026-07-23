@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/api_exceptions.dart';
 import '../../domain/booking_model.dart';
 
 class BookingResponse {
@@ -53,7 +54,7 @@ class BookingRepository {
           }
         }
       }
-      throw Exception('Failed to generate booking: Invalid response from server');
+      throw ApiException(message: 'Failed to generate booking: Invalid response from server', statusCode: response.statusCode);
     } catch (e) {
       rethrow;
     }
@@ -76,7 +77,7 @@ class BookingRepository {
           }
         }
       }
-      throw Exception('Failed to load booking history');
+      throw ApiException(message: 'Failed to load booking history', statusCode: response.statusCode);
     } catch (e) {
       rethrow;
     }
