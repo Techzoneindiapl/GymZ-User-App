@@ -12,6 +12,7 @@ import 'package:gymz_user/features/home/data/repositories/gym_repository.dart';
 import 'package:gymz_user/features/home/domain/gym_model.dart';
 import 'package:gymz_user/features/pass/application/booking_history_provider.dart';
 import 'package:gymz_user/features/pass/domain/review_model.dart';
+import 'package:gymz_user/features/pass/presentation/screens/pass_detail_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -280,26 +281,19 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
           );
         }
 
-        // Find the latest active booking to display the card at the top
-        final activeBookings = bookings.where((b) => b.status.toLowerCase() == 'booked').toList();
-        final latestBooking = activeBookings.isNotEmpty ? activeBookings.first : null;
-
-        // Show all other bookings below in the list
-        final listBookings = bookings.where((b) => b != latestBooking).toList();
-
-        // Filter the listBookings based on the selected chip
-        final filteredListBookings = listBookings.where((b) {
+        // Filter all bookings based on the selected chip
+        final filteredListBookings = bookings.where((b) {
           final status = b.status.toLowerCase();
           final parsedDate = DateTime.tryParse(b.bookingDate) ?? DateTime.now();
-          
+
           if (_selectedBookingFilter == 'Active') {
-            return status == 'booked';
+            return status == 'booked' || status == 'active';
           } else if (_selectedBookingFilter == 'Used') {
             return status == 'completed' || status == 'attended';
           } else if (_selectedBookingFilter == 'Upcoming') {
             final now = DateTime.now();
             final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
-            return status == 'booked' && parsedDate.isAfter(todayEnd);
+            return (status == 'booked' || status == 'active') && parsedDate.isAfter(todayEnd);
           }
           return true; // 'All'
         }).toList();
@@ -312,203 +306,104 @@ class _MyPassScreenState extends ConsumerState<MyPassScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (latestBooking == null) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(tr['my_bookings'] ?? 'My Bookings', style: AppTextStyles.sectionTitle),
+                    Text(
+                      '${filteredListBookings.length} ${filteredListBookings.length == 1 ? "session" : "sessions"}',
+                      style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w600),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.info_outline, size: 16, color: AppColors.primary),
-                        const SizedBox(width: AppSpacing.xs),
-                        Expanded(
-                          child: Text(
-                            tr['use_digital_pass_msg'] ?? 'Use your digital pass for past/unused booking',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                ],
-                if (latestBooking != null) ...[
-                  RepaintBoundary(
-                    key: _repaintKey,
-                    child: _ActivePassCard(
-                      memberName: userName,
-                      gymName: latestBooking.gymName,
-                      passId: latestBooking.bookingId,
-                      dateLabel: DateFormat('dd MMM yyyy').format(DateTime.tryParse(latestBooking.bookingDate) ?? DateTime.now()),
-                      time: latestBooking.timeSlot,
-                      tier: 'Platinum',
-                      userId: userId,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: PrimaryButton(
-                          label: _isDownloading 
-                              ? (tr['downloading'] ?? 'Downloading...') 
-                              : (tr['download'] ?? 'Download'),
-                          leadingIcon: _isDownloading ? null : Icons.download_outlined,
-                          onPressed: _isDownloading ? null : () => _downloadPass(latestBooking),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Material(
-                          color: AppColors.surfaceCardSolid,
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                            onTap: _isSharing ? null : () => _sharePass(latestBooking),
-                            child: Container(
-                              height: 56,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
-                                border: Border.all(color: AppColors.surfaceCardBorder),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  _isSharing
-                                      ? const SizedBox(
-                                          width: 18,
-                                          height: 18,
-                                          child: CircularProgressIndicator(strokeWidth: 2),
-                                        )
-                                      : Icon(Icons.share_outlined, size: 18, color: AppColors.textPrimary),
-                                  const SizedBox(width: AppSpacing.sm),
-                                  Text(
-                                    _isSharing 
-                                        ? (tr['sharing'] ?? 'Sharing...') 
-                                        : (tr['share'] ?? 'Share'),
-                                    style: AppTextStyles.buttonLabel,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(color: AppColors.primary.withOpacity(0.2)),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.info_outline, size: 16, color: AppColors.primary),
-                        const SizedBox(width: AppSpacing.xs),
-                        Expanded(
-                          child: Text(
-                            tr['use_digital_pass_msg'] ?? 'Use your digital pass for past/unused bookings',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                if (listBookings.isNotEmpty || _selectedBookingFilter != 'All') ...[
-                  const SizedBox(height: AppSpacing.xxl),
-                  Text(tr['my_bookings'] ?? 'My Bookings', style: AppTextStyles.sectionTitle),
-                  const SizedBox(height: AppSpacing.md),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: ['All', 'Active', 'Used', 'Upcoming'].map((filter) {
-                        final isSelected = _selectedBookingFilter == filter;
-                        final String translatedFilter;
-                        switch (filter) {
-                          case 'All':
-                            translatedFilter = tr['all'] ?? 'All';
-                            break;
-                          case 'Active':
-                            translatedFilter = tr['active'] ?? 'Active';
-                            break;
-                          case 'Used':
-                            translatedFilter = tr['used'] ?? 'Used';
-                            break;
-                          case 'Upcoming':
-                            translatedFilter = tr['upcoming'] ?? 'Upcoming';
-                            break;
-                          default:
-                            translatedFilter = filter;
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: Text(translatedFilter),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              if (selected) {
-                                setState(() {
-                                  _selectedBookingFilter = filter;
-                                });
-                              }
-                            },
-                            selectedColor: AppColors.primary.withOpacity(0.15),
-                            labelStyle: AppTextStyles.bodySmall.copyWith(
-                              color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            ),
-                            backgroundColor: AppColors.surfaceCard,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.pill),
-                              side: BorderSide(
-                                color: isSelected ? AppColors.primary : AppColors.surfaceCardBorder,
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  filteredListBookings.isEmpty
-                      ? Padding(
-                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-                          child: Center(
-                            child: Text(
-                              tr['no_bookings_found'] ?? 'No bookings found.',
-                              style: AppTextStyles.bodySmall.copyWith(fontStyle: FontStyle.italic),
-                            ),
-                          ),
-                        )
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: filteredListBookings.length,
-                          itemBuilder: (context, index) {
-                            final booking = filteredListBookings[index];
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                              child: _UpcomingPassItem(booking: booking),
-                            );
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: ['All', 'Active', 'Used', 'Upcoming'].map((filter) {
+                      final isSelected = _selectedBookingFilter == filter;
+                      final String translatedFilter;
+                      switch (filter) {
+                        case 'All':
+                          translatedFilter = tr['all'] ?? 'All';
+                          break;
+                        case 'Active':
+                          translatedFilter = tr['active'] ?? 'Active';
+                          break;
+                        case 'Used':
+                          translatedFilter = tr['used'] ?? 'Used';
+                          break;
+                        case 'Upcoming':
+                          translatedFilter = tr['upcoming'] ?? 'Upcoming';
+                          break;
+                        default:
+                          translatedFilter = filter;
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text(translatedFilter),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() {
+                                _selectedBookingFilter = filter;
+                              });
+                            }
                           },
+                          selectedColor: AppColors.primary.withOpacity(0.15),
+                          labelStyle: AppTextStyles.bodySmall.copyWith(
+                            color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                          backgroundColor: AppColors.surfaceCard,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                            side: BorderSide(
+                              color: isSelected ? AppColors.primary : AppColors.surfaceCardBorder,
+                            ),
+                          ),
                         ),
-                ],
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                filteredListBookings.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+                        child: Center(
+                          child: Text(
+                            tr['no_bookings_found'] ?? 'No bookings found.',
+                            style: AppTextStyles.bodySmall.copyWith(fontStyle: FontStyle.italic),
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: filteredListBookings.length,
+                        itemBuilder: (context, index) {
+                          final booking = filteredListBookings[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                            child: _UpcomingPassItem(
+                              booking: booking,
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => PassDetailScreen(
+                                      booking: booking,
+                                      memberName: userName,
+                                      userId: userId,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
                 const SizedBox(height: AppSpacing.xxl),
               ],
             ),
@@ -909,8 +804,13 @@ class _PassField extends StatelessWidget {
 }
 
 class _UpcomingPassItem extends StatelessWidget {
-  const _UpcomingPassItem({required this.booking});
+  const _UpcomingPassItem({
+    required this.booking,
+    this.onTap,
+  });
+
   final BookingModel booking;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -919,7 +819,7 @@ class _UpcomingPassItem extends StatelessWidget {
     final monthStr = DateFormat('MMM').format(parsedDate);
 
     final status = booking.status.toLowerCase();
-    final bool isActive = status == 'booked';
+    final bool isActive = status == 'booked' || status == 'active';
     final bool isCompleted = status == 'completed' || status == 'attended';
 
     Color badgeColor;
@@ -936,56 +836,69 @@ class _UpcomingPassItem extends StatelessWidget {
       badgeText = booking.status.toUpperCase();
     }
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+    return Material(
+      color: AppColors.surfaceCard,
+      borderRadius: BorderRadius.circular(AppRadius.xl),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: AppColors.surfaceCardBorder),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColors.iconCircleBg,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-            child: Text(
-              dayStr,
-              style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
-            ),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            border: Border.all(color: AppColors.surfaceCardBorder),
           ),
-          const SizedBox(width: AppSpacing.lg),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(booking.gymName, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700)),
-                Text('$dayStr $monthStr · ${booking.timeSlot} · Single Session', style: AppTextStyles.bodySmall),
-              ],
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: badgeColor.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-              border: Border.all(color: badgeColor.withOpacity(0.5)),
-            ),
-            child: Text(
-              badgeText,
-              style: AppTextStyles.caption.copyWith(
-                color: badgeColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 10,
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.iconCircleBg,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Text(
+                  dayStr,
+                  style: AppTextStyles.sectionTitle.copyWith(fontSize: 16),
+                ),
               ),
-            ),
+              const SizedBox(width: AppSpacing.lg),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(booking.gymName, style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700)),
+                    Text('$dayStr $monthStr · ${booking.timeSlot} · Single Session', style: AppTextStyles.bodySmall),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: badgeColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  border: Border.all(color: badgeColor.withOpacity(0.5)),
+                ),
+                child: Text(
+                  badgeText,
+                  style: AppTextStyles.caption.copyWith(
+                    color: badgeColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: AppColors.textSecondary,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
