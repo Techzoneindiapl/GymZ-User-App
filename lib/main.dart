@@ -35,7 +35,6 @@ class GymzUserApp extends ConsumerWidget {
     AppColors.isDark = themeMode == ThemeMode.dark;
 
     final textSizeScale = ref.watch(textSizeProvider);
-    AppTextStyles.textScaleFactor = textSizeScale == TextSizeScale.large ? 1.25 : 1.0;
 
     return MaterialApp.router(
       title: 'GymZ',
@@ -44,6 +43,14 @@ class GymzUserApp extends ConsumerWidget {
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
       routerConfig: appRouter,
+      builder: (context, child) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final screenScale = (screenWidth / 390.0).clamp(0.85, 1.25);
+        final userScale = textSizeScale == TextSizeScale.large ? 1.25 : 1.0;
+        
+        AppTextStyles.textScaleFactor = screenScale * userScale;
+        return child ?? const SizedBox.shrink();
+      },
     );
   }
 }

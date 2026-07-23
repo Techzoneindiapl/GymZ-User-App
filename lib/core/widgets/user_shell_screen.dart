@@ -260,9 +260,25 @@ class _UserBottomNavBar extends StatelessWidget {
                       height: 56,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: AppColors.primary,
                         shape: BoxShape.circle,
-                        boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 16, offset: const Offset(0, 4))],
+                        color: AppColors.isDark ? AppColors.primary : null,
+                        gradient: !AppColors.isDark
+                            ? LinearGradient(
+                                colors: [
+                                  AppColors.accentStart,
+                                  AppColors.accentEnd,
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              )
+                            : null,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (AppColors.isDark ? AppColors.primary : AppColors.accentStart).withOpacity(0.4),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          )
+                        ],
                       ),
                       child: Icon(isSelected ? tab.activeIcon : tab.icon, color: AppColors.textOnPrimary, size: 26),
                     ),

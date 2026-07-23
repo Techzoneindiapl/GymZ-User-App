@@ -504,7 +504,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   _MenuItem(icon: Icons.credit_card_outlined, label: 'Fitness Card', onTap: widget.onFitnessCard),
                   _MenuItem(icon: Icons.history_outlined, label: 'Booking History', onTap: widget.onBookingHistory),
                   _MenuItem(icon: Icons.wallet_outlined, label: 'Wallet', onTap: widget.onWallet),
-                  _MenuItem(icon: Icons.settings_outlined, label: 'Settings', onTap: widget.onSettings),
+                  // _MenuItem(icon: Icons.settings_outlined, label: 'Settings', onTap: widget.onSettings),
                   _MenuItem(
                     icon: Icons.privacy_tip_outlined,
                     label: 'Privacy Policy',
