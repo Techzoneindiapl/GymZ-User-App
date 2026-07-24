@@ -97,50 +97,48 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
               // Categories Row
               Text(tr['categories'] ?? 'Categories', style: AppTextStyles.sectionTitle),
               const SizedBox(height: AppSpacing.md),
-              SizedBox(
-                height: 90,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: kCategories.length,
-                  separatorBuilder: (_, __) =>
-                      const SizedBox(width: AppSpacing.md),
-                  itemBuilder: (context, index) {
-                    final category = kCategories[index];
-                    final isSelected = selectedCategory == category;
-                    final String translatedCategory;
-                    switch (category) {
-                      case 'Gym':
-                        translatedCategory = tr['category_gym'] ?? 'Gym';
-                        break;
-                      case 'Yoga':
-                        translatedCategory = tr['category_yoga'] ?? 'Yoga';
-                        break;
-                      case 'Sports':
-                        translatedCategory = tr['category_sports'] ?? 'Sports';
-                        break;
-                      case 'Zumba':
-                        translatedCategory = tr['category_zumba'] ?? 'Zumba';
-                        break;
-                      default:
-                        translatedCategory = category;
-                    }
-                    return CategoryChip(
-                      label: translatedCategory,
-                      isSelected: isSelected,
-                      categoryName: category,
-                      onTap: () {
-                        final notifier = ref.read(
-                          selectedCategoryProvider.notifier,
-                        );
-                        if (isSelected) {
-                          notifier.state = null;
-                        } else {
-                          notifier.state = category;
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  for (final category in kCategories)
+                    Builder(
+                      builder: (context) {
+                        final isSelected = selectedCategory == category;
+                        final String translatedCategory;
+                        switch (category) {
+                          case 'Gym':
+                            translatedCategory = tr['category_gym'] ?? 'Gym';
+                            break;
+                          case 'Yoga':
+                            translatedCategory = tr['category_yoga'] ?? 'Yoga';
+                            break;
+                          case 'Sports':
+                            translatedCategory = tr['category_sports'] ?? 'Sports';
+                            break;
+                          case 'Zumba':
+                            translatedCategory = tr['category_zumba'] ?? 'Zumba';
+                            break;
+                          default:
+                            translatedCategory = category;
                         }
+                        return CategoryChip(
+                          label: translatedCategory,
+                          isSelected: isSelected,
+                          categoryName: category,
+                          onTap: () {
+                            final notifier = ref.read(
+                              selectedCategoryProvider.notifier,
+                            );
+                            if (isSelected) {
+                              notifier.state = null;
+                            } else {
+                              notifier.state = category;
+                            }
+                          },
+                        );
                       },
-                    );
-                  },
-                ),
+                    ),
+                ],
               ),
               const SizedBox(height: AppSpacing.xl),
 

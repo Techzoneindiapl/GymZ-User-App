@@ -371,31 +371,38 @@ class _BookingBottomSheetState extends State<BookingBottomSheet> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text('Total Payable', style: AppTextStyles.caption),
-                        if (slotLabel.isNotEmpty) ...[
-                          Text(' · ', style: AppTextStyles.caption),
-                          Text(
-                            slotLabel,
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w700,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text('Total Payable', style: AppTextStyles.caption),
+                          if (slotLabel.isNotEmpty) ...[
+                            Text(' · ', style: AppTextStyles.caption),
+                            Flexible(
+                              child: Text(
+                                slotLabel,
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
+                          ],
                         ],
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '₹$price',
-                      style: AppTextStyles.price.copyWith(fontSize: 20, color: AppColors.primary),
-                    ),
-                  ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '₹$price',
+                        style: AppTextStyles.price.copyWith(fontSize: 20, color: AppColors.primary),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: AppSpacing.sm),
                 Text(
                   '1 Session Pass',
                   style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.w600),
