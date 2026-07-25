@@ -371,7 +371,7 @@ class _PassDetailScreenState extends ConsumerState<PassDetailScreen> {
                     _DetailItem(label: 'Time Slot', value: booking.timeSlot),
                     const SizedBox(height: AppSpacing.sm),
                     _DetailItem(label: 'Amount Paid', value: '₹${booking.price}'),
-                    // if (booking.paymentId.isNotEmpty) ...[
+                    // if (booking.paymentId.isNotEmpty) ...[0
                     //   const SizedBox(height: AppSpacing.sm),
                     //   _DetailItem(label: 'Payment ID', value: booking.paymentId),
                     // ],
@@ -444,7 +444,7 @@ class _SessionPassCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Image.asset(
-                'assets/logo/gymz-logo.png',
+                AppColors.logoPath,
                 width: 90,
                 fit: BoxFit.contain,
               ),

@@ -46,6 +46,9 @@ class AppColors {
   // Chart and progress bar unhighlighted bar color.
   static Color get chartBarMuted => isDark ? const Color(0x40C6FF00) : const Color(0xFFCCF5FA);
 
+  // Logo asset path based on active theme mode (light mode -> gymz-logo-dark, dark mode -> gymz-logo).
+  static String get logoPath => isDark ? 'assets/logo/gymz-logo.png' : 'assets/logo/gymz-logo-dark.png';
+
   // ----------------- Compatibility Layer for Legacy References -----------------
   static Color get primary => accentStart;
   static Color get primaryLight => accentEnd;

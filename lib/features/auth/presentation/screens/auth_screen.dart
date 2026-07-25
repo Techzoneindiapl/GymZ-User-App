@@ -301,7 +301,7 @@ class _GymzLogo extends StatelessWidget {
       child: Column(
         children: [
           Image.asset(
-            'assets/logo/gymz-logo.png',
+            AppColors.logoPath,
             height: 110,
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) {

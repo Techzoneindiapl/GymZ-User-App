@@ -188,7 +188,7 @@ class _PassCardState extends State<_PassCard>
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Image.asset(
-                      'assets/logo/gymz-logo.png',
+                      AppColors.logoPath,
                       width: 122,
                       fit: BoxFit.contain,
                     ),

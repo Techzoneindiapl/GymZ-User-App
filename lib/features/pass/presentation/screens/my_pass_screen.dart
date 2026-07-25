@@ -664,7 +664,7 @@ class _ActivePassCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Image.asset(
-                'assets/logo/gymz-logo.png',
+                AppColors.logoPath,
                 width: 90,
                 fit: BoxFit.contain,
               ),
