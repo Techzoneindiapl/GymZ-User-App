@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/localization/translations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -35,6 +36,7 @@ class AuthScreen extends ConsumerStatefulWidget {
 class _AuthScreenState extends ConsumerState<AuthScreen> {
   late final TextEditingController _phoneController;
   bool _isValid = false;
+  bool _isTermsAccepted = false;
 
   @override
   void initState() {
@@ -56,7 +58,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   Future<void> _handleSendOtp() async {
-    if (!_isValid) return;
+    if (!_isValid || !_isTermsAccepted) return;
     
     final success = await ref.read(authProvider.notifier).sendOtp(_phoneController.text);
     if (success && mounted) {
@@ -244,6 +246,23 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     ),
                     SizedBox(height: h * 0.05),
                     
+                    // Checkbox for Terms & Conditions and Privacy Policy
+                    _animatedOption(
+                      _TermsCheckboxRow(
+                        isChecked: _isTermsAccepted,
+                        onChanged: (val) {
+                          setState(() {
+                            _isTermsAccepted = val ?? false;
+                          });
+                        },
+                        tr: tr,
+                        onTerms: widget.onTerms,
+                        onPrivacyPolicy: widget.onPrivacyPolicy,
+                      ),
+                      4,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
                     // Display error if any
                     if (authState.errorMessage != null) ...[
                       _animatedOption(
@@ -255,22 +274,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             textAlign: TextAlign.center,
                           ),
                         ),
-                        4,
+                        5,
                       ),
                     ],
                     
                     _animatedOption(
                       PrimaryButton(
-                        label: tr['continue'] ?? 'Continue', 
-                        isEnabled: _isValid && !isLoading,
+                        label: tr['send_otp'] ?? 'Send OTP', 
+                        isEnabled: _isValid && _isTermsAccepted && !isLoading,
                         isLoading: isLoading,
                         onPressed: _handleSendOtp,
                       ),
-                      4,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    _animatedOption(
-                      _TermsRow(onTerms: widget.onTerms, onPrivacyPolicy: widget.onPrivacyPolicy),
                       5,
                     ),
                     const SizedBox(height: AppSpacing.xl),
@@ -435,48 +449,126 @@ class _GoogleIcon extends StatelessWidget {
   }
 }
 
-class _TermsRow extends StatelessWidget {
-  const _TermsRow({this.onTerms, this.onPrivacyPolicy});
+class _TermsCheckboxRow extends StatelessWidget {
+  const _TermsCheckboxRow({
+    required this.isChecked,
+    required this.onChanged,
+    required this.tr,
+    this.onTerms,
+    this.onPrivacyPolicy,
+  });
+
+  final bool isChecked;
+  final ValueChanged<bool?> onChanged;
+  final Map<String, String> tr;
   final VoidCallback? onTerms;
   final VoidCallback? onPrivacyPolicy;
 
+  Future<void> _launchURL(BuildContext context, String urlString) async {
+    final Uri url = Uri.parse(urlString);
+    try {
+      await launchUrl(url, mode: LaunchMode.inAppWebView);
+    } catch (_) {
+      try {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } catch (_) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open link')),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Text.rich(
-      TextSpan(
-        style: AppTextStyles.caption,
-        children: [
-          const TextSpan(text: 'By continuing you agree to our '),
-          WidgetSpan(
-            alignment: PlaceholderAlignment.middle,
-            child: GestureDetector(
-              onTap: onTerms,
-              child: Text(
-                'Terms',
+    final termsText = tr['terms_and_conditions'] ?? 'Terms & Conditions';
+    final privacyText = tr['privacy_policy'] ?? 'Privacy Policy';
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 24,
+          height: 24,
+          child: Checkbox(
+            value: isChecked,
+            onChanged: onChanged,
+            activeColor: AppColors.primary,
+            checkColor: AppColors.textOnAccent,
+            side: BorderSide(
+              color: AppColors.textMuted.withOpacity(0.8),
+              width: 1.5,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: GestureDetector(
+            onTap: () => onChanged(!isChecked),
+            child: Text.rich(
+              TextSpan(
                 style: AppTextStyles.caption.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
                 ),
+                children: [
+                  const TextSpan(text: 'I agree to the '),
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.middle,
+                    child: GestureDetector(
+                      onTap: () {
+                        if (onTerms != null) {
+                          onTerms!();
+                        } else {
+                          _launchURL(context, 'https://www.gymz.co.in/terms');
+                        }
+                      },
+                      child: Text(
+                        termsText,
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          decoration: TextDecoration.underline,
+                          decorationColor: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const TextSpan(text: ' and '),
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.middle,
+                    child: GestureDetector(
+                      onTap: () {
+                        if (onPrivacyPolicy != null) {
+                          onPrivacyPolicy!();
+                        } else {
+                          _launchURL(context, 'https://www.gymz.co.in/privacy');
+                        }
+                      },
+                      child: Text(
+                        privacyText,
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          decoration: TextDecoration.underline,
+                          decorationColor: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          const TextSpan(text: ' & '),
-          WidgetSpan(
-            alignment: PlaceholderAlignment.middle,
-            child: GestureDetector(
-              onTap: onPrivacyPolicy,
-              child: Text(
-                'Privacy Policy',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 }
