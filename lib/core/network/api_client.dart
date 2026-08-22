@@ -10,7 +10,7 @@ class ApiClient {
   ApiClient(this._storageService) {
     _dio = Dio(
       BaseOptions(
-        baseUrl: 'https://gymz-backend-zuip.onrender.com/',
+        baseUrl: 'https://gymz.net/',
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 20),
         headers: {

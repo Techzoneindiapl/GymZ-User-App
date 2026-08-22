@@ -125,7 +125,12 @@ class _CreateAccountScreenState extends ConsumerState<CreateAccountScreen> {
 
   Future<void> _pickSelfie(BuildContext context) async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.camera);
+    final picked = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 70,   // compress to ~70% quality
+      maxWidth: 800,      // cap at 800px wide
+      maxHeight: 800,     // cap at 800px tall
+    );
     if (picked != null) {
       ref.read(createAccountProvider.notifier).updateSelfie(picked.path);
     }
