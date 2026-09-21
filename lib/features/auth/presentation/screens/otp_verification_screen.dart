@@ -68,12 +68,15 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
 
   Future<void> _handleResend() async {
     if (!_canResend) return;
-    final phone = ref.read(authProvider).phone;
-    if (phone != null) {
-      final success = await ref.read(authProvider.notifier).sendOtp(phone);
-      if (success) {
-        _startTimer();
-      }
+    final success = await ref.read(authProvider.notifier).resendOtp();
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('OTP resent successfully via SMS'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      _startTimer();
     }
   }
 

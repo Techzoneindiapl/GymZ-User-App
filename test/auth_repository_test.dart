@@ -7,6 +7,7 @@ import 'package:gymz_user/core/storage/storage_service.dart';
 import 'package:gymz_user/core/services/notification_service.dart';
 import 'package:gymz_user/features/auth/data/repositories/auth_repository.dart';
 
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late Dio dio;
@@ -201,6 +202,62 @@ void main() {
       expect(result, isTrue);
       expect(mockNotificationService.lastShownTitle, equals('GymZ Verification Code'));
       expect(mockNotificationService.lastShownBody, contains('4321'));
+    });
+
+    test('resendOtp succeeds when api/v1/user/resend-otp is supported', () async {
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            if (options.path == 'api/v1/user/resend-otp' && options.data['phone'] == '7400105833') {
+              return handler.resolve(
+                Response(
+                  requestOptions: options,
+                  statusCode: 200,
+                  data: {'success': true, 'message': 'OTP resent successfully'},
+                ),
+              );
+            }
+            return handler.next(options);
+          },
+        ),
+      );
+
+      final result = await authRepository.resendOtp('7400105833');
+      expect(result, isTrue);
+    });
+
+    test('resendOtp delegates to sendOtp when resend-otp returns 404', () async {
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            if (options.path == 'api/v1/user/resend-otp') {
+              return handler.reject(
+                DioException(
+                  requestOptions: options,
+                  response: Response(
+                    requestOptions: options,
+                    statusCode: 404,
+                  ),
+                  type: DioExceptionType.badResponse,
+                ),
+              );
+            }
+            if (options.path == 'api/v1/user/send-otp' && options.data['phone'] == '7400105833') {
+              return handler.resolve(
+                Response(
+                  requestOptions: options,
+                  statusCode: 200,
+                  data: {'success': true, 'message': 'OTP sent successfully'},
+                ),
+              );
+            }
+            return handler.next(options);
+          },
+        ),
+      );
+
+      final result = await authRepository.resendOtp('7400105833');
+      expect(result, isTrue);
     });
   });
 }

@@ -97,6 +97,39 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
+  Future<bool> resendOtp() async {
+    final phone = state.phone;
+    if (phone == null) {
+      state = state.copyWith(
+        status: AuthStatus.unauthenticated,
+        errorMessage: 'Session timeout. Please request OTP again.',
+      );
+      return false;
+    }
+
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      final success = await repo.resendOtp(phone);
+      if (success) {
+        state = state.copyWith(
+          status: AuthStatus.verificationPending,
+          clearError: true,
+        );
+        return true;
+      } else {
+        state = state.copyWith(
+          errorMessage: 'Failed to resend OTP. Please try again.',
+        );
+        return false;
+      }
+    } catch (e) {
+      state = state.copyWith(
+        errorMessage: e.toString().replaceAll('Exception: ', ''),
+      );
+      return false;
+    }
+  }
+
   Future<VerifyOtpResponse?> verifyOtp(String otp) async {
     final phone = state.phone;
     if (phone == null) {

@@ -24,7 +24,7 @@ class AuthRepository {
   final ApiClient _apiClient;
   final NotificationService? _notificationService;
 
-  /// Send OTP to the user's phone number.
+  /// Request SMS OTP from backend.
   /// POST api/v1/user/send-otp
   Future<bool> sendOtp(String phone) async {
     try {
@@ -35,6 +35,7 @@ class AuthRepository {
       
       final isSuccess = response.statusCode == 200 || response.statusCode == 201;
       
+      // If backend returns OTP in debug/mock environment, show local notification
       if (isSuccess && response.data != null) {
         final data = response.data;
         if (data is Map<String, dynamic>) {
@@ -50,6 +51,25 @@ class AuthRepository {
       }
       
       return isSuccess;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Resend SMS OTP to the user's phone number via backend.
+  /// POST api/v1/user/resend-otp (falls back to send-otp if endpoint is unified)
+  Future<bool> resendOtp(String phone) async {
+    try {
+      final response = await _apiClient.post(
+        'api/v1/user/resend-otp',
+        data: {'phone': phone},
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } on ApiException catch (e) {
+      if (e.statusCode == 404) {
+        return await sendOtp(phone);
+      }
+      rethrow;
     } catch (e) {
       rethrow;
     }
@@ -71,7 +91,6 @@ class AuthRepository {
         final data = response.data;
         if (data is Map<String, dynamic>) {
           // If the backend returns a token or user details, the user is registered.
-          // Adjust checks based on typical API structures:
           final token = data['token'] ?? data['accessToken'] ?? data['data']?['token'];
           final isRegisteredFlag = data['registered'] ?? data['is_registered'] ?? data['isRegistered'] ?? (token != null);
           
@@ -88,9 +107,7 @@ class AuthRepository {
       }
       return const VerifyOtpResponse(isRegistered: false);
     } on ApiException catch (e) {
-      // If server returns 404 (user not found) or similar, it means the OTP is valid but the user is not registered.
-      // Let's check if the OTP is invalid or if the user is just not registered.
-      // Usually, if the API returns 404 for login-otp, it means user is not registered.
+      // If server returns 404 (user not found), the OTP is valid but user is not registered yet.
       if (e.statusCode == 404) {
         return const VerifyOtpResponse(isRegistered: false);
       }
