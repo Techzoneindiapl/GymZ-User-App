@@ -55,12 +55,19 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     ref.read(selectedCategoryProvider.notifier).state = null;
     ref.read(selectedTiersProvider.notifier).state = const [];
     ref.read(sortByProvider.notifier).state = 'distance';
-    ref.read(maxDistanceProvider.notifier).state = 10.0;
+    ref.read(maxDistanceProvider.notifier).state = null;
+    ref.read(selectedGenderProvider.notifier).state = null;
     _searchController.clear();
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<String>(gymSearchQueryProvider, (previous, next) {
+      if (_searchController.text != next) {
+        _searchController.text = next;
+      }
+    });
+
     final filteredGymsAsync = ref.watch(filteredGymsProvider);
     final selectedCategory = ref.watch(selectedCategoryProvider);
     final tr = ref.watch(translationProvider);

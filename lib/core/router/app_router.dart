@@ -10,6 +10,7 @@ import '../../features/home/domain/gym_model.dart';
 import '../../features/location/presentation/screens/location_permission_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
+import '../../features/wallet/presentation/screens/wallet_screen.dart';
 import '../widgets/user_shell_screen.dart';
 import 'route_names.dart';
 
@@ -135,6 +136,14 @@ final GoRouter appRouter = GoRouter(
       pageBuilder: (context, state) => _slide(
         state: state,
         child: const NotificationsScreen(),
+      ),
+    ),
+    GoRoute(
+      path: RoutePaths.wallet,
+      name: RouteNames.wallet,
+      pageBuilder: (context, state) => _slide(
+        state: state,
+        child: const WalletScreen(),
       ),
     ),
   ],

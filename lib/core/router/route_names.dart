@@ -13,6 +13,7 @@ class RouteNames {
   static const String myPass = 'myPass';
   static const String profile = 'profile';
   static const String notifications = 'notifications';
+  static const String wallet = 'wallet';
 }
 
 class RoutePaths {
@@ -30,4 +31,5 @@ class RoutePaths {
   static const String myPass = '/pass';
   static const String profile = '/profile';
   static const String notifications = '/notifications';
+  static const String wallet = '/wallet';
 }

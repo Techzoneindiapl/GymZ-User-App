@@ -17,8 +17,8 @@ final selectedTiersProvider = StateProvider<List<String>>((ref) => const []);
 /// Provider holding the sort criteria ('distance', 'price', 'rating').
 final sortByProvider = StateProvider<String>((ref) => 'distance');
 
-/// Provider holding the maximum distance range in km.
-final maxDistanceProvider = StateProvider<double>((ref) => 10.0);
+/// Provider holding the maximum distance range in km (null means no distance filter).
+final maxDistanceProvider = StateProvider<double?>((ref) => null);
 
 /// Provider holding the selected gender filter ('Male', 'Female', 'Unisex', or null).
 final selectedGenderProvider = StateProvider<String?>((ref) => null);
@@ -91,8 +91,10 @@ final filteredGymsProvider = Provider<AsyncValue<List<GymModel>>>((ref) {
       gyms = gyms.where((gym) => gym.gender.toLowerCase() == gender.toLowerCase() || gym.gender.toLowerCase() == 'unisex').toList();
     }
 
-    // 2. Filter by distance range.
-    gyms = gyms.where((gym) => gym.distanceKm <= maxDistance).toList();
+    // 2. Filter by distance range (only if user explicitly set a max distance).
+    if (maxDistance != null) {
+      gyms = gyms.where((gym) => gym.distanceKm <= maxDistance).toList();
+    }
 
     // 3. Sort listing.
     if (sortBy == 'price') {

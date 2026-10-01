@@ -10,6 +10,7 @@ import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/wallet/presentation/screens/wallet_screen.dart';
 import '../../features/auth/presentation/screens/fitness_pass_screen.dart';
 import '../../features/auth/application/auth_provider.dart';
+import '../../features/home/application/gym_filter_provider.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
@@ -103,6 +104,24 @@ class _UserShellScreenState extends ConsumerState<UserShellScreen> {
                 pathParameters: {'id': gym.id},
                 extra: gym,
               );
+            },
+            onSeeAllNearby: () {
+              ref.read(gymSearchQueryProvider.notifier).state = '';
+              ref.read(selectedCategoryProvider.notifier).state = null;
+              ref.read(selectedTiersProvider.notifier).state = const [];
+              ref.read(sortByProvider.notifier).state = 'distance';
+              ref.read(maxDistanceProvider.notifier).state = null;
+              ref.read(selectedGenderProvider.notifier).state = null;
+              _onTabTapped(1);
+            },
+            onSeeAllTiers: () {
+              ref.read(gymSearchQueryProvider.notifier).state = '';
+              ref.read(selectedCategoryProvider.notifier).state = null;
+              ref.read(selectedTiersProvider.notifier).state = const [];
+              ref.read(sortByProvider.notifier).state = 'distance';
+              ref.read(maxDistanceProvider.notifier).state = null;
+              ref.read(selectedGenderProvider.notifier).state = null;
+              _onTabTapped(1);
             },
             onPassTap: () => _onTabTapped(2),
             onNotificationTap: () {

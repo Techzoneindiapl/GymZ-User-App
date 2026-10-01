@@ -78,6 +78,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final selectedTiers = ref.watch(selectedTiersProvider);
     final tr = ref.watch(translationProvider);
 
+    ref.listen<String>(gymSearchQueryProvider, (previous, next) {
+      if (_searchController.text != next) {
+        _searchController.text = next;
+      }
+    });
+
     return RefreshIndicator(
       onRefresh: () async {
         await ref.refresh(gymsListProvider.future);
@@ -112,7 +118,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: AppSpacing.xxl),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-              child: _SectionHeader(title: tr['categories'] ?? 'Categories', onSeeAll: () {}),
+              child: _SectionHeader(title: tr['categories'] ?? 'Categories', onSeeAll: widget.onSeeAllNearby ?? () {}),
             ),
             const SizedBox(height: AppSpacing.md),
             Padding(
@@ -179,9 +185,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   );
                 }
+                final displayedGyms = filteredGyms.take(5).toList();
                 return Column(
                   children: [
-                    for (final gym in filteredGyms)
+                    for (final gym in displayedGyms)
                       Padding(
                         padding: const EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, AppSpacing.lg),
                         child: GymCard(

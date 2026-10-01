@@ -928,3 +928,145 @@ class BookingSuccessDialog extends ConsumerWidget {
     );
   }
 }
+
+/// A dialog displayed when the user has insufficient wallet balance to complete a booking.
+class InsufficientBalanceDialog extends StatelessWidget {
+  const InsufficientBalanceDialog({
+    super.key,
+    required this.requiredAmount,
+    required this.currentBalance,
+    required this.onAddMoney,
+    this.onCancel,
+  });
+
+  final double requiredAmount;
+  final double currentBalance;
+  final VoidCallback onAddMoney;
+  final VoidCallback? onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final neededAmount = (requiredAmount - currentBalance).clamp(0.0, double.infinity);
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceCard,
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
+          border: Border.all(color: AppColors.surfaceCardBorder),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Circular Badge Icon with warning/wallet styling
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.danger.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.account_balance_wallet_outlined,
+                  size: 32,
+                  color: AppColors.danger,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            // Title & Subtitle
+            Text(
+              'Insufficient Balance',
+              style: AppTextStyles.displayMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'You do not have enough funds in your wallet to book this session. Please add money to your wallet to continue.',
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            // Structured Details Card
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceCardSolid,
+                borderRadius: BorderRadius.circular(AppRadius.xl),
+                border: Border.all(color: AppColors.surfaceCardBorder),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Current Balance', style: AppTextStyles.bodySmall),
+                      Text(
+                        '₹${currentBalance.toStringAsFixed(0)}',
+                        style: AppTextStyles.body.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Divider(color: AppColors.divider),
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Session Fee', style: AppTextStyles.bodySmall),
+                      Text(
+                        '₹${requiredAmount.toStringAsFixed(0)}',
+                        style: AppTextStyles.body.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Divider(color: AppColors.divider),
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Amount Needed', style: AppTextStyles.bodySmall),
+                      Text(
+                        '₹${neededAmount.toStringAsFixed(0)}',
+                        style: AppTextStyles.body.copyWith(
+                          color: AppColors.danger,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            // Buttons: "Add Money in Wallet" & "Cancel"
+            PrimaryButton(
+              label: 'Add Money in Wallet',
+              leadingIcon: Icons.account_balance_wallet_outlined,
+              onPressed: onAddMoney,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            OutlineButton(
+              label: 'Cancel',
+              onPressed: onCancel ?? () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

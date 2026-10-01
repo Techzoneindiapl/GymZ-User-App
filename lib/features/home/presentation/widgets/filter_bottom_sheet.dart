@@ -17,7 +17,7 @@ class FilterBottomSheet extends ConsumerStatefulWidget {
 class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   late List<String> _tempTiers;
   late String _tempSortBy;
-  late double _tempMaxDistance;
+  double? _tempMaxDistance;
   String? _tempGender;
 
   final _availableTiers = const ['Platinum', 'Diamond', 'Gold', 'Silver'];
@@ -54,7 +54,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
     setState(() {
       _tempTiers = [];
       _tempSortBy = 'distance';
-      _tempMaxDistance = 10.0;
+      _tempMaxDistance = null;
       _tempGender = null;
     });
   }
@@ -159,15 +159,32 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('MAX DISTANCE', style: AppTextStyles.label),
-              Text('${_tempMaxDistance.toStringAsFixed(1)} km', style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700)),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _tempMaxDistance == null
+                        ? 'Any distance'
+                        : '${_tempMaxDistance!.toStringAsFixed(1)} km',
+                    style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  if (_tempMaxDistance != null) ...[
+                    const SizedBox(width: AppSpacing.xs),
+                    GestureDetector(
+                      onTap: () => setState(() => _tempMaxDistance = null),
+                      child: Icon(Icons.close, size: 16, color: AppColors.textMuted),
+                    ),
+                  ],
+                ],
+              ),
             ],
           ),
           Slider(
-            value: _tempMaxDistance,
+            value: _tempMaxDistance ?? 15.0,
             min: 1.0,
-            max: 15.0,
-            divisions: 14,
-            activeColor: AppColors.primary,
+            max: 30.0,
+            divisions: 29,
+            activeColor: _tempMaxDistance != null ? AppColors.primary : AppColors.divider,
             inactiveColor: AppColors.divider,
             onChanged: (val) => setState(() => _tempMaxDistance = val),
           ),

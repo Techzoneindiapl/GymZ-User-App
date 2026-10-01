@@ -16,6 +16,8 @@ import '../../data/repositories/booking_repository.dart';
 import '../../../wallet/application/wallet_provider.dart';
 import '../../../wallet/domain/wallet_model.dart';
 import '../../../pass/application/booking_history_provider.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/router/route_names.dart';
 
 class GymDetailScreen extends ConsumerStatefulWidget {
   const GymDetailScreen({super.key, required this.gym, this.onBack, this.onBookNow, this.onShare});
@@ -139,6 +141,33 @@ class _GymDetailScreenState extends ConsumerState<GymDetailScreen> {
     }
 
     if (confirmResult == BookingDialogResult.confirm && mounted) {
+      final sessionPrice = gym.getPriceForTime(hour: time.hour, minute: time.minute).toDouble();
+      final currentBalance = ref.read(walletProvider).value?.walletBalance ?? 0.0;
+
+      // Check balance before calling booking API
+      if (currentBalance < sessionPrice) {
+        final shouldAddMoney = await showDialog<bool>(
+          context: context,
+          barrierDismissible: true,
+          builder: (context) => InsufficientBalanceDialog(
+            requiredAmount: sessionPrice,
+            currentBalance: currentBalance,
+            onAddMoney: () => Navigator.pop(context, true),
+          ),
+        );
+
+        if (shouldAddMoney == true && mounted) {
+          await context.pushNamed(RouteNames.wallet);
+          if (mounted) {
+            final updatedBalance = ref.read(walletProvider).value?.walletBalance ?? 0.0;
+            if (updatedBalance >= sessionPrice) {
+              _startBookingFlow(gym, date, time);
+            }
+          }
+        }
+        return;
+      }
+
       // Show loading overlay
       showDialog(
         context: context,
@@ -214,6 +243,32 @@ class _GymDetailScreenState extends ConsumerState<GymDetailScreen> {
         // Pop loading overlay
         if (mounted) {
           Navigator.pop(context);
+        }
+
+        final errorStr = e.toString().toLowerCase();
+        if (errorStr.contains('insufficient') || errorStr.contains('balance') || errorStr.contains('funds')) {
+          if (mounted) {
+            final shouldAddMoney = await showDialog<bool>(
+              context: context,
+              barrierDismissible: true,
+              builder: (context) => InsufficientBalanceDialog(
+                requiredAmount: sessionPrice,
+                currentBalance: ref.read(walletProvider).value?.walletBalance ?? 0.0,
+                onAddMoney: () => Navigator.pop(context, true),
+              ),
+            );
+
+            if (shouldAddMoney == true && mounted) {
+              await context.pushNamed(RouteNames.wallet);
+              if (mounted) {
+                final updatedBalance = ref.read(walletProvider).value?.walletBalance ?? 0.0;
+                if (updatedBalance >= sessionPrice) {
+                  _startBookingFlow(gym, date, time);
+                }
+              }
+            }
+          }
+          return;
         }
 
         // Show Error Snackbar
